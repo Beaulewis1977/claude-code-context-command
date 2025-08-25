@@ -1,0 +1,230 @@
+# Sample Output Examples
+
+## Standard Mode Output
+
+### Balanced Project Configuration
+```
+  ⎿  ⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶⛶⛶
+     ⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶⛶⛶   Context Usage
+     ⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶⛶⛶   claude-sonnet-4 • 165k/200k tokens (82%)
+     ⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶⛶⛶
+     ⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶   ⛁ System prompt: 8.5k tokens (4.2%)
+     ⛁⛁⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶   ⛁ System tools: 15.2k tokens (7.6%)
+     ⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶   ⛁ MCP tools: 95.6k tokens (47.8%)
+     ⛁⛁⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶   ⛁ Custom agents: 28.1k tokens (14.1%)
+     ⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶   ⛁ Memory files: 17.6k tokens (8.8%)
+     ⛁⛁⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶   ⛶ Free space: 35k (17.5%)
+
+     MCP tools • /mcp
+     └ mcp__github-official__search_repositories (github-official): 3.2k tokens
+     └ mcp__github-official__create_or_update_file (github-official): 2.8k tokens
+     └ mcp__github-official__get_repository_info (github-official): 2.1k tokens
+     └ mcp__zen__chat (zen): 4.5k tokens
+     └ mcp__zen__think_deep (zen): 3.8k tokens
+     └ mcp__database-tools__query (database-tools): 5.2k tokens
+     └ mcp__database-tools__schema (database-tools): 4.1k tokens
+     └ mcp__fetch__fetch (fetch): 2.9k tokens
+     └ (... 12 more tools)
+
+     Custom agents • /agents
+     └ api-integration-specialist (Project): 12.4k tokens
+     └ database-architect (Project): 8.9k tokens
+     └ security-auditor (Project): 6.8k tokens
+
+     Memory files • /memory
+     └ Project (/workspace/CLAUDE.md): 15.2k tokens
+     └ Project (/workspace/.claude/context.md): 2.4k tokens
+
+Optimization Recommendations:
+
+Medium Impact (5-10% token reduction):
+- **Review Agent Sizes**: api-integration-specialist is quite large (12.4k tokens)
+- **MCP Server Audit**: Consider disabling unused servers (potential 15-25k savings)
+
+Low Impact (<5% token reduction):
+- **Memory Cleanup**: Archive old conversation threads in CLAUDE.md
+```
+
+### High MCP Usage Scenario
+```
+  ⎿  ⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶
+     ⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶   Context Usage
+     ⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶   claude-sonnet-4 • 189k/200k tokens (95%)
+     ⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶
+     ⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶   ⛁ System prompt: 8.5k tokens (4.3%)
+     ⛁⛁⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶   ⛁ System tools: 15.2k tokens (7.6%)
+     ⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶⛶   ⛁ MCP tools: 145.8k tokens (72.9%)
+     ⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶   ⛁ Custom agents: 15.2k tokens (7.6%)
+     ⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶   ⛁ Memory files: 4.3k tokens (2.2%)
+     ⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶   ⛶ Free space: 11k (5.5%)
+
+     MCP tools • /mcp
+     └ mcp__github-official__ (15 tools): 45.2k tokens
+     └ mcp__database-tools__ (8 tools): 32.1k tokens
+     └ mcp__web-scraper__ (12 tools): 28.3k tokens
+     └ mcp__slack-integration__ (6 tools): 18.7k tokens
+     └ mcp__zen__ (4 tools): 12.1k tokens
+     └ mcp__fetch__ (3 tools): 9.4k tokens
+
+     Custom agents • /agents
+     └ system-orchestrator (Project): 8.2k tokens
+     └ api-specialist (Project): 4.1k tokens
+     └ performance-monitor (Project): 2.9k tokens
+
+     Memory files • /memory
+     └ Project (/workspace/CLAUDE.md): 4.3k tokens
+
+⚠️  WARNING: High context usage! (95%)
+
+Optimization Recommendations:
+
+High Impact (>10% token reduction):
+- **Critical: Disable Unused MCP Servers**: web-scraper (28.3k), slack-integration (18.7k)
+- **MCP Server Consolidation**: Review if all 48 MCP tools are actively needed
+- **Potential savings: 40-60k tokens (20-30%)**
+
+Medium Impact (5-10% token reduction):
+- **Agent Optimization**: system-orchestrator could be split or reduced
+- **Database Tools Review**: 8 tools may be excessive for current project
+```
+
+### Minimal Configuration
+```
+  ⎿  ⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶
+     ⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶   Context Usage  
+     ⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶   claude-sonnet-4 • 85k/200k tokens (43%)
+     ⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶
+     ⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶   ⛁ System prompt: 8.5k tokens (10.0%)
+     ⛁⛁⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶   ⛁ System tools: 15.2k tokens (17.9%)
+     ⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶   ⛁ MCP tools: 45.8k tokens (53.9%)
+     ⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶   ⛁ Custom agents: 12.5k tokens (14.7%)
+     ⛁⛀⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶⛶   ⛁ Memory files: 3.0k tokens (3.5%)
+     ⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶⛶⛶⛶⛶⛶⛶   ⛶ Free space: 115k (57.5%)
+
+     MCP tools • /mcp
+     └ mcp__github-official__search_repositories (github-official): 3.2k tokens
+     └ mcp__github-official__create_or_update_file (github-official): 2.8k tokens
+     └ mcp__zen__chat (zen): 4.5k tokens
+     └ mcp__fetch__fetch (fetch): 2.9k tokens
+     └ (... 8 more tools)
+
+     Custom agents • /agents
+     └ code-reviewer (Project): 7.2k tokens
+     └ documentation-writer (Project): 5.3k tokens
+
+     Memory files • /memory
+     └ Project (/workspace/CLAUDE.md): 3.0k tokens
+
+✅ Excellent context efficiency! (43% usage)
+
+Status: Well-optimized project setup
+- Efficient MCP server selection (4 servers, 12 tools)
+- Focused agent configuration
+- Clean memory management
+- Plenty of room for complex conversations and large imports
+```
+
+## Summary Mode Output
+
+### Balanced Project
+```
+Context Usage: 165k/200k tokens (82%)
+⛁ System: 23.7k (12.1%) ⛁ MCP: 95.6k (47.8%) ⛁ Agents: 28.1k (14.1%) ⛁ Memory: 17.6k (8.8%) ⛁ Free: 35k (17.5%)
+```
+
+### High Usage Warning
+```
+Context Usage: 189k/200k tokens (95%) ⚠️
+⛁ System: 23.7k (12.5%) ⛁ MCP: 145.8k (77.1%) ⛁ Agents: 15.2k (8.0%) ⛁ Memory: 4.3k (2.3%) ⛁ Free: 11k (5.5%)
+```
+
+### Minimal Configuration  
+```
+Context Usage: 85k/200k tokens (43%)
+⛁ System: 23.7k (27.9%) ⛁ MCP: 45.8k (53.9%) ⛁ Agents: 12.5k (14.7%) ⛁ Memory: 3.0k (3.5%) ⛁ Free: 115k (57.5%)
+```
+
+## Error and Fallback Scenarios
+
+### Project Not Detected
+```
+❌ No .claude directory found in current path or parent directories.
+   Make sure you are running this command from within a Claude Code project.
+
+  ⎿  ⛁ ⛁ ⛁ ⛁ ⛀ ⛁ ⛁ ⛁ ⛁ ⛁ 
+     ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁   Context Usage
+     ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁   claude-sonnet-4 • ~170k/200k tokens (85%)
+     ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ 
+     ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁   ⛁ System prompt: ~8.5k tokens (5.0%)
+     ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁   ⛁ System tools: ~15.2k tokens (9.0%)
+     ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛀ ⛶ ⛶ ⛶   ⛁ MCP tools: ~130k tokens (76.5%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ Estimated usage (no project config available)
+
+Note: For accurate analysis, navigate to a Claude Code project directory.
+```
+
+### Analysis Timeout
+```
+⚠️  Analysis timeout after 10 seconds - using cached estimate
+
+  ⎿  ⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶
+     ⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶   Context Usage (Estimated)
+     ⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶   claude-sonnet-4 • ~185k/200k tokens (93%)
+     ⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶
+
+Large project detected - consider MCP server optimization for faster analysis.
+```
+
+### Cached Result
+```
+⚡ Using cached analysis (127s ago)
+
+  ⎿  ⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶⛶⛶
+     [... normal output ...]
+```
+
+## Real-World Project Examples
+
+### Web Development Project
+```
+     MCP tools • /mcp
+     └ mcp__github-official__ (8 tools): 28.4k tokens
+     └ mcp__web-scraper__ (6 tools): 22.1k tokens
+     └ mcp__database-tools__ (4 tools): 15.3k tokens
+     └ mcp__fetch__ (3 tools): 8.7k tokens
+
+     Custom agents • /agents
+     └ frontend-architect (Project): 11.2k tokens
+     └ api-designer (Project): 8.4k tokens
+     └ performance-optimizer (Project): 6.8k tokens
+```
+
+### Data Science Project
+```
+     MCP tools • /mcp
+     └ mcp__database-tools__ (12 tools): 42.8k tokens
+     └ mcp__jupyter-integration__ (8 tools): 28.9k tokens
+     └ mcp__data-visualization__ (6 tools): 18.4k tokens
+     └ mcp__github-official__ (4 tools): 12.1k tokens
+
+     Custom agents • /agents
+     └ data-analyst-specialist (Project): 15.8k tokens
+     └ ml-model-architect (Project): 12.4k tokens
+     └ statistical-reviewer (Project): 9.2k tokens
+```
+
+### Enterprise Integration Project
+```
+     MCP tools • /mcp
+     └ mcp__database-tools__ (15 tools): 52.3k tokens
+     └ mcp__slack-integration__ (8 tools): 28.7k tokens
+     └ mcp__github-official__ (12 tools): 35.4k tokens
+     └ mcp__api-testing__ (6 tools): 18.9k tokens
+     └ mcp__monitoring__ (4 tools): 12.8k tokens
+
+     Custom agents • /agents
+     └ enterprise-architect (Project): 18.9k tokens
+     └ security-compliance-auditor (Project): 14.2k tokens
+     └ integration-specialist (Project): 11.7k tokens
+     └ deployment-orchestrator (Project): 9.8k tokens
+```

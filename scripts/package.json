@@ -1,0 +1,10 @@
+{
+  "type": "module",
+  "name": "claude-code-context-scripts",
+  "version": "1.0.0",
+  "description": "Global context analysis scripts for Claude Code",
+  "scripts": {
+    "context": "node context-cmd.js",
+    "analyze": "node context-analyzer.js"
+  }
+}

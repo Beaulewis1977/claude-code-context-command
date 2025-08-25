@@ -1,0 +1,43 @@
+{
+  "name": "claude-code-context-command",
+  "version": "1.0.0",
+  "description": "Universal context usage analyzer for Claude Code - works from any directory in any project",
+  "main": "install.js",
+  "bin": {
+    "claude-context-install": "./install.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "context",
+    "analyzer",
+    "token",
+    "usage",
+    "mcp",
+    "ai",
+    "development",
+    "tooling"
+  ],
+  "author": "Beaulewis1977",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Beaulewis1977/claude-code-context-command.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Beaulewis1977/claude-code-context-command/issues"
+  },
+  "homepage": "https://github.com/Beaulewis1977/claude-code-context-command#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "files": [
+    "install.js",
+    "../scripts/*",
+    "../commands/*"
+  ],
+  "preferGlobal": true
+}
