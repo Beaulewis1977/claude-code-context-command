@@ -328,11 +328,16 @@ claude-code-context-command/
 
 ### Contributing
 
+We'd love your help! Whether you want to fix bugs, add features, improve docs, or test on different platforms.
+
+**Quick start:**
 1. Fork this repository
 2. Create a feature branch: `git checkout -b feature-name`
 3. Make your changes
 4. Test on multiple platforms
 5. Submit a pull request
+
+**For detailed guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md)**
 
 ### Local Development
 
