@@ -352,11 +352,21 @@ node scripts/context-analyzer.js summary
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙋‍♂️ Support
+## 🙋‍♂️ Support & Help
 
 - **GitHub Issues**: [Report bugs or request features](https://github.com/Beaulewis1977/claude-code-context-command/issues)
 - **Documentation**: [Full documentation](docs/)
 - **Repository**: [Source code](https://github.com/Beaulewis1977/claude-code-context-command)
+
+## ☕ Want to Help Keep Building Cool Tools?
+
+Hey! I'm Beau Lewis, and I love building apps that help people. If this tool made your Claude Code experience better and you'd like to help me keep creating useful stuff, I'd really appreciate it!
+
+- **Email**: blewisxx@gmail.com
+- **Venmo**: @beauintulsa
+- **Ko-fi**: https://ko-fi.com/beaulewis
+
+No pressure at all - just happy you're using the tool! But if you're feeling generous, it definitely helps fuel more late-night coding sessions and coffee-driven development. 🚀
 
 ## 🎉 Acknowledgments
 
@@ -366,4 +376,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ for the Claude Code community**
+**Designed & Built by Beau Lewis • Made with ❤️ for the Claude Code community**
