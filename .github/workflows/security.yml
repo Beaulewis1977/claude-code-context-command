@@ -311,6 +311,7 @@ jobs:
             [[ "$file_path" == */node_modules/* ]] && return 0
             [[ "$file_path" == *.md ]] && return 0
             [[ "$file_path" == */.git/* ]] && return 0
+            [[ "$file_path" == */.github/* ]] && return 0
             
             # Check custom path exclusions from allowlist
             local path_patterns=(
