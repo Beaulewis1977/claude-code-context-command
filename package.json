@@ -1,0 +1,16 @@
+{
+  "type": "module",
+  "name": "claude-code-context-command",
+  "version": "1.0.0",
+  "description": "Global context analysis command for Claude Code",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Beaulewis1977/claude-code-context-command.git"
+  },
+  "keywords": ["claude", "code", "context", "analyzer", "github", "ai"],
+  "author": "Claude Code Community",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "type": "module",
+  "name": "claude-code-context-lib",
+  "version": "1.0.0",
+  "description": "Security utilities library for Claude Code Context Command",
+  "main": "security.js",
+  "exports": {
+    ".": "./security.js",
+    "./security": "./security.js",
+    "./security.js": "./security.js"
+  }
+}
