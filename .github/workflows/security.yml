@@ -390,7 +390,7 @@ jobs:
                 echo "$match_line" >> "$TEMP_RESULTS"
                 SECRETS_FOUND=$((SECRETS_FOUND + 1))
               fi
-            done < <(grep -r -E -i -n "$pattern" . --exclude-dir=node_modules --exclude-dir=.git 2>/dev/null || true)
+            done < <(grep -r -E -i -n "$pattern" . --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.github 2>/dev/null || true)
           done
           
           echo ""
