@@ -374,8 +374,17 @@ jobs:
           if [ -f "npm/package.json" ]; then
             cd npm
             
-            # Update version in package.json
-            npm version "$CLEAN_VERSION" --no-git-tag-version
+            # Get current version from package.json
+            CURRENT_VERSION=$(node -p "require('./package.json').version")
+            echo "Current NPM package version: $CURRENT_VERSION"
+            
+            # Update version in package.json if different
+            if [ "$CURRENT_VERSION" != "$CLEAN_VERSION" ]; then
+              npm version "$CLEAN_VERSION" --no-git-tag-version
+              echo "✅ NPM package version updated to $CLEAN_VERSION"
+            else
+              echo "✅ NPM package already at version $CLEAN_VERSION"
+            fi
             
             echo "✅ NPM package prepared for publication"
             cat package.json | grep version
