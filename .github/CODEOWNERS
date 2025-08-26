@@ -1,0 +1,41 @@
+# Claude Code Context Command - Code Owners
+# This file defines who owns different parts of the codebase
+# and who should review changes to specific files/directories
+
+# Global owners - require review for all changes
+* @claude-code-context-command-maintainers
+
+# Security-critical files - require security team review
+claude-code-context-command/lib/security.js @security-team @claude-code-context-command-maintainers
+claude-code-context-command/tests/security.test.js @security-team @claude-code-context-command-maintainers
+
+# Installation scripts - require platform-specific review
+claude-code-context-command/installers/ @platform-team @claude-code-context-command-maintainers
+claude-code-context-command/installers/install.sh @linux-team @macos-team
+claude-code-context-command/installers/install.ps1 @windows-team
+claude-code-context-command/installers/install-web.sh @linux-team @macos-team
+
+# Core analysis scripts - require core team review
+claude-code-context-command/scripts/context-analyzer.js @core-team @claude-code-context-command-maintainers
+claude-code-context-command/scripts/context-cmd.js @core-team @claude-code-context-command-maintainers
+
+# GitHub Actions workflows - require DevOps team review
+.github/workflows/ @devops-team @claude-code-context-command-maintainers
+.github/dependabot.yml @devops-team @claude-code-context-command-maintainers
+
+# Package configuration - require release team review  
+claude-code-context-command/scripts/package.json @release-team @claude-code-context-command-maintainers
+claude-code-context-command/npm/package.json @release-team @claude-code-context-command-maintainers
+
+# Documentation - require docs team review for significant changes
+*.md @docs-team
+claude-code-context-command/docs/ @docs-team
+claude-code-context-command/README.md @docs-team @claude-code-context-command-maintainers
+
+# Security and governance files - require security team review
+.github/SECURITY.md @security-team @claude-code-context-command-maintainers
+.github/CODEOWNERS @security-team @claude-code-context-command-maintainers
+LICENSE @legal-team @claude-code-context-command-maintainers
+
+# Examples and samples - less strict review requirements
+claude-code-context-command/examples/ @docs-team

@@ -6,6 +6,7 @@
   "scripts": {
     "context": "node context-cmd.js",
     "analyze": "node context-analyzer.js",
+    "test": "mocha ../tests/security.test.js",
     "security-test": "node ../tests/security.test.js"
   },
   "devDependencies": {

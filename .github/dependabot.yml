@@ -1,0 +1,81 @@
+version: 2
+updates:
+  # Monitor npm dependencies in scripts directory
+  - package-ecosystem: "npm"
+    directory: "/claude-code-context-command/scripts"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "04:00"
+      timezone: "UTC"
+    # Security updates get priority
+    open-pull-requests-limit: 10
+    reviewers:
+      - "claude-code-context-command-maintainers"
+    labels:
+      - "dependencies"
+      - "security"
+    # Group dependency updates to reduce PR noise
+    groups:
+      security-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "security"
+      dev-dependencies:
+        patterns:
+          - "mocha"
+          - "@types/*"
+          - "eslint*"
+          - "prettier"
+          - "*-cli"
+        update-types:
+          - "minor"
+          - "patch"
+    # Automatically merge security patches if they pass tests
+    commit-message:
+      prefix: "⬆️"
+      prefix-development: "⬆️ [DEV]"
+      include: "scope"
+
+  # Monitor npm dependencies in npm package directory (if exists)
+  - package-ecosystem: "npm" 
+    directory: "/claude-code-context-command/npm"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "04:30"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "npm-package"
+    commit-message:
+      prefix: "📦"
+      include: "scope"
+
+  # Monitor GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday" 
+      time: "05:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "🔧"
+      prefix-development: "🔧 [CI]"
+      include: "scope"
+    # Group GitHub Actions updates
+    groups:
+      github-actions:
+        patterns:
+          - "actions/*"
+          - "github/*"
+        update-types:
+          - "minor"
+          - "patch"

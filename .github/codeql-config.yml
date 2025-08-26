@@ -1,0 +1,31 @@
+name: "CodeQL Config for Claude Code Context Command"
+
+# Security-focused configuration for static analysis
+queries:
+  - uses: security-extended
+  - uses: security-and-quality
+
+# Path filters - focus on security-critical areas
+paths:
+  - claude-code-context-command/lib/
+  - claude-code-context-command/scripts/
+  - claude-code-context-command/installers/
+
+# Ignore test files from certain checks to reduce noise
+paths-ignore:
+  - claude-code-context-command/tests/
+  - "**/node_modules/**"
+  - "**/*.md"
+
+# Disable problematic queries that might cause false positives
+disable-default-queries: false
+
+# Additional configuration for JavaScript analysis
+query-filters:
+  - exclude:
+      kind: problem
+      id: js/unused-local-variable
+      # Allow unused variables in test files
+      paths:
+        - "**/*test*.js"
+        - "**/*spec*.js"
