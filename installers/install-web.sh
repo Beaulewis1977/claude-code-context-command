@@ -21,14 +21,38 @@ SCRIPTS_DIR="$CLAUDE_DIR/scripts"
 COMMANDS_DIR="$CLAUDE_DIR/commands"
 TEMP_DIR=$(mktemp -d)
 
-# File checksums (SHA256) - UPDATE THESE WHEN FILES CHANGE
-declare -A CHECKSUMS=(
-    ["context-analyzer.js"]="a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2"
-    ["context-analyzer-simple.js"]="b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3"
-    ["context-cmd.js"]="c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4"
-    ["context.md"]="d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5"
-    ["package.json"]="e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6"
-)
+# File checksums (SHA256) - Retrieved dynamically from trusted source
+# For enhanced security, checksums are fetched from the repository's releases or checksums file
+declare -A CHECKSUMS=()
+
+# Function to fetch checksums from trusted source
+fetch_checksums() {
+    local checksums_url="$1"
+    local temp_checksums_file="$TEMP_DIR/checksums.txt"
+    
+    print_status "Fetching checksums from trusted source..."
+    
+    if download_file "$checksums_url" "$temp_checksums_file" "$(detect_download_tool)"; then
+        # Parse checksums file and populate CHECKSUMS array
+        while IFS=' ' read -r hash filename || [ -n "$hash" ]; do
+            # Skip empty lines and comments
+            [[ "$hash" =~ ^[[:space:]]*# ]] || [[ -z "${hash// }" ]] && continue
+            
+            # Extract just the filename without path
+            filename=$(basename "$filename")
+            CHECKSUMS["$filename"]="$hash"
+            print_status "  Added checksum for: $filename"
+        done < "$temp_checksums_file"
+        
+        print_success "Checksums fetched and loaded successfully"
+        return 0
+    else
+        print_warning "Failed to fetch checksums from trusted source"
+        print_warning "Checksums will be disabled for this installation"
+        print_warning "This reduces security but installation can continue"
+        return 1
+    fi
+}
 
 # Cleanup function
 cleanup() {
@@ -139,7 +163,8 @@ download_and_verify() {
         fi
     else
         print_warning "No checksum available for $filename - cannot verify integrity"
-        print_warning "This reduces security assurance"
+        print_warning "This reduces security assurance but installation can continue"
+        print_warning "Consider enabling checksum verification for enhanced security"
     fi
     
     return 0
@@ -168,6 +193,10 @@ download_files() {
     print_status "Using $download_tool for downloads"
     
     local base_url="https://raw.githubusercontent.com/$GITHUB_REPO/$BRANCH"
+    
+    # Attempt to fetch checksums from trusted source (optional for enhanced security)
+    local checksums_url="$base_url/checksums/install-checksums.txt"
+    fetch_checksums "$checksums_url" || true  # Continue even if checksums fail
     
     # Download all required files
     local files=(

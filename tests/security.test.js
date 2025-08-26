@@ -369,7 +369,7 @@ describe('Security Test Suite', () => {
     describe('error sanitization', () => {
       it('should sanitize error messages to prevent information disclosure', () => {
         const sensitiveErrors = [
-          new Error('ENOENT: no such file or directory, open \\'/home/user/secret/password.txt\\''),
+          new Error('ENOENT: no such file or directory, open \'/home/user/secret/password.txt\''),
           new Error('Connection failed to mysql://user:password@localhost:3306/db'),
           new Error('Failed to read /etc/shadow: Permission denied'),
           { code: 'EACCES', message: 'Permission denied accessing /root/.ssh/id_rsa' },
@@ -460,7 +460,7 @@ describe('Security Test Suite', () => {
         const content = 'original content';
         await fs.writeFile(testFile, content);
 
-        const wrongHash = 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2';
+        const wrongHash = 'test-fake-hash-for-security-validation-12345';
 
         const isValid = await IntegrityVerifier.verifyChecksum(testFile, wrongHash);
         expect(isValid).to.be.false;

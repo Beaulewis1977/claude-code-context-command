@@ -137,6 +137,45 @@ jobs:
         working-directory: ./scripts
         run: npm ci
 
+      - name: Setup .claude directory for testing
+        run: |
+          echo "📁 Setting up .claude directory structure for CI testing..."
+          
+          # Create .claude directory structure
+          mkdir -p .claude/agents
+          mkdir -p .claude/memory-bank
+          mkdir -p .claude/scripts
+          
+          # Create basic CLAUDE.md file
+          cat > .claude/CLAUDE.md << 'EOF'
+          # Claude Code Context Command Project
+          
+          This is a test project for CI/CD pipeline validation.
+          
+          ## Project Overview
+          
+          Testing the claude-code-context-command functionality in CI environment.
+          
+          ## Context
+          
+          The context analyzer should be able to process this minimal project structure for testing purposes.
+          EOF
+          
+          # Create basic settings.local.json file
+          cat > .claude/settings.local.json << 'EOF'
+          {
+            "project_name": "claude-code-context-command-test",
+            "ai_model": "claude-3-5-sonnet-20241022",
+            "context_mode": "summary",
+            "max_tokens": 200000,
+            "test_environment": true,
+            "enabledMcpjsonServers": []
+          }
+          EOF
+          
+          echo "✅ .claude directory structure created successfully"
+          ls -la .claude/
+
       - name: Run functional tests
         working-directory: ./scripts
         run: |
@@ -370,6 +409,45 @@ jobs:
       - name: Install dependencies
         working-directory: ./scripts
         run: npm ci
+
+      - name: Setup .claude directory for integration testing
+        run: |
+          echo "📁 Setting up .claude directory structure for integration testing..."
+          
+          # Create .claude directory structure
+          mkdir -p .claude/agents
+          mkdir -p .claude/memory-bank  
+          mkdir -p .claude/scripts
+          
+          # Create basic CLAUDE.md file
+          cat > .claude/CLAUDE.md << 'EOF'
+          # Claude Code Context Command Project
+          
+          This is a test project for CI/CD pipeline validation.
+          
+          ## Project Overview
+          
+          Testing the claude-code-context-command functionality in CI environment.
+          
+          ## Context
+          
+          The context analyzer should be able to process this minimal project structure for testing purposes.
+          EOF
+          
+          # Create basic settings.local.json file
+          cat > .claude/settings.local.json << 'EOF'
+          {
+            "project_name": "claude-code-context-command-test",
+            "ai_model": "claude-3-5-sonnet-20241022",
+            "context_mode": "summary",
+            "max_tokens": 200000,
+            "test_environment": true,
+            "enabledMcpjsonServers": []
+          }
+          EOF
+          
+          echo "✅ .claude directory structure created successfully"
+          ls -la .claude/
 
       - name: Run end-to-end test
         working-directory: ./

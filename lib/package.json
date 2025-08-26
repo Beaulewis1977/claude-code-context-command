@@ -4,9 +4,22 @@
   "version": "1.0.0",
   "description": "Security utilities library for Claude Code Context Command",
   "main": "security.js",
+  "module": "security.js",
   "exports": {
-    ".": "./security.js",
-    "./security": "./security.js",
-    "./security.js": "./security.js"
+    ".": {
+      "import": "./security.js",
+      "require": "./security.js",
+      "default": "./security.js"
+    },
+    "./security": {
+      "import": "./security.js",
+      "require": "./security.js",
+      "default": "./security.js"
+    },
+    "./security.js": {
+      "import": "./security.js",
+      "require": "./security.js",
+      "default": "./security.js"
+    }
   }
 }

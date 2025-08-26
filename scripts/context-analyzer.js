@@ -8,7 +8,9 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
+// Import using both strategies to ensure CI compatibility
 import { InputValidator, SecureErrorHandler } from '../lib/security.js';
+import securityDefaults from '../lib/security.js';
 
 // Rough token estimation (1 token ≈ 4 characters for English text)
 const estimateTokens = text => Math.ceil(text.length / 4);
@@ -74,16 +76,26 @@ const cleanupCache = () => {
  * Includes path traversal protection
  */
 async function findClaudeDirectory(startPath = process.cwd()) {
-  // Validate and sanitize start path
+  // Validate and sanitize start path using imported modules with fallback
   let currentPath;
   try {
-    const validatedStartPath = InputValidator.validatePath(startPath);
+    const validator = InputValidator || (securityDefaults && securityDefaults.InputValidator);
+    const errorHandler = SecureErrorHandler || (securityDefaults && securityDefaults.SecureErrorHandler);
+
+    if (!validator || !errorHandler) {
+      throw new Error('Security modules not available');
+    }
+
+    const validatedStartPath = validator.validatePath(startPath);
     currentPath = path.resolve(validatedStartPath);
   } catch (error) {
-    SecureErrorHandler.logSecurityEvent('invalid_start_path_analyzer', {
-      startPath: 'REDACTED',
-      error: error.message,
-    });
+    const errorHandler = SecureErrorHandler || (securityDefaults && securityDefaults.SecureErrorHandler);
+    if (errorHandler) {
+      errorHandler.logSecurityEvent('invalid_start_path_analyzer', {
+        startPath: 'REDACTED',
+        error: error.message,
+      });
+    }
     // Fall back to current working directory if start path is invalid
     currentPath = path.resolve(process.cwd());
   }
@@ -97,10 +109,13 @@ async function findClaudeDirectory(startPath = process.cwd()) {
 
     // Additional security: ensure claudePath is within expected bounds
     if (!claudePath.startsWith(currentPath)) {
-      SecureErrorHandler.logSecurityEvent('path_traversal_attempt_analyzer', {
-        currentPath: 'REDACTED',
-        claudePath: 'REDACTED',
-      });
+      const errorHandler = SecureErrorHandler || (securityDefaults && securityDefaults.SecureErrorHandler);
+      if (errorHandler) {
+        errorHandler.logSecurityEvent('path_traversal_attempt_analyzer', {
+          currentPath: 'REDACTED',
+          claudePath: 'REDACTED',
+        });
+      }
       break;
     }
 
@@ -118,9 +133,12 @@ async function findClaudeDirectory(startPath = process.cwd()) {
   }
 
   if (iterations >= maxIterations) {
-    SecureErrorHandler.logSecurityEvent('max_iterations_exceeded_analyzer', {
-      iterations: maxIterations,
-    });
+    const errorHandler = SecureErrorHandler || (securityDefaults && securityDefaults.SecureErrorHandler);
+    if (errorHandler) {
+      errorHandler.logSecurityEvent('max_iterations_exceeded_analyzer', {
+        iterations: maxIterations,
+      });
+    }
   }
 
   return null;

@@ -8,7 +8,9 @@
 
 import path from 'path';
 import os from 'os';
+// Import using both strategies to ensure CI compatibility
 import { SafeCommandExecutor, InputValidator, SecureErrorHandler } from '../lib/security.js';
+import securityDefaults from '../lib/security.js';
 
 /**
  * Find the nearest .claude directory by walking up the directory tree
@@ -17,16 +19,26 @@ import { SafeCommandExecutor, InputValidator, SecureErrorHandler } from '../lib/
 async function findClaudeDirectory(startPath = process.cwd()) {
   const { promises: fs } = await import('fs');
 
-  // Validate and sanitize start path
+  // Validate and sanitize start path using imported modules with fallback
   let currentPath;
   try {
-    const validatedStartPath = InputValidator.validatePath(startPath);
+    const validator = InputValidator || (securityDefaults && securityDefaults.InputValidator);
+    const errorHandler = SecureErrorHandler || (securityDefaults && securityDefaults.SecureErrorHandler);
+
+    if (!validator || !errorHandler) {
+      throw new Error('Security modules not available');
+    }
+
+    const validatedStartPath = validator.validatePath(startPath);
     currentPath = path.resolve(validatedStartPath);
   } catch (error) {
-    SecureErrorHandler.logSecurityEvent('invalid_start_path', {
-      startPath: 'REDACTED',
-      error: error.message,
-    });
+    const errorHandler = SecureErrorHandler || (securityDefaults && securityDefaults.SecureErrorHandler);
+    if (errorHandler) {
+      errorHandler.logSecurityEvent('invalid_start_path', {
+        startPath: 'REDACTED',
+        error: error.message,
+      });
+    }
     // Fall back to current working directory if start path is invalid
     currentPath = path.resolve(process.cwd());
   }
@@ -40,10 +52,13 @@ async function findClaudeDirectory(startPath = process.cwd()) {
 
     // Additional security: ensure claudePath is within expected bounds
     if (!claudePath.startsWith(currentPath)) {
-      SecureErrorHandler.logSecurityEvent('path_traversal_attempt', {
-        currentPath: 'REDACTED',
-        claudePath: 'REDACTED',
-      });
+      const errorHandler = SecureErrorHandler || (securityDefaults && securityDefaults.SecureErrorHandler);
+      if (errorHandler) {
+        errorHandler.logSecurityEvent('path_traversal_attempt', {
+          currentPath: 'REDACTED',
+          claudePath: 'REDACTED',
+        });
+      }
       break;
     }
 
@@ -65,9 +80,12 @@ async function findClaudeDirectory(startPath = process.cwd()) {
   }
 
   if (iterations >= maxIterations) {
-    SecureErrorHandler.logSecurityEvent('max_iterations_exceeded', {
-      iterations: maxIterations,
-    });
+    const errorHandler = SecureErrorHandler || (securityDefaults && securityDefaults.SecureErrorHandler);
+    if (errorHandler) {
+      errorHandler.logSecurityEvent('max_iterations_exceeded', {
+        iterations: maxIterations,
+      });
+    }
   }
 
   return null;
@@ -79,7 +97,24 @@ class ContextCommand {
     this.lastAnalysis = null;
     this.lastAnalysisTime = null;
     this.lastAnalysisProject = null;
-    this.executor = new SafeCommandExecutor();
+
+    // Enhanced compatibility: Use fallback if named imports are not available
+    try {
+      this.executor = new SafeCommandExecutor();
+      this.InputValidator = InputValidator;
+      this.SecureErrorHandler = SecureErrorHandler;
+    } catch (error) {
+      // Fallback to default exports if named imports fail in CI environments
+      if (securityDefaults && securityDefaults.SafeCommandExecutor) {
+        this.executor = new securityDefaults.SafeCommandExecutor();
+        this.InputValidator = securityDefaults.InputValidator;
+        this.SecureErrorHandler = securityDefaults.SecureErrorHandler;
+      } else {
+        console.error('❌ Failed to initialize security modules:', error.message);
+        console.error('   This indicates a critical CommonJS/ES modules compatibility issue.');
+        process.exit(1);
+      }
+    }
   }
 
   async execute(mode = 'compact') {
@@ -87,12 +122,12 @@ class ContextCommand {
 
     try {
       // Validate mode parameter to prevent injection
-      const validatedMode = InputValidator.validateMode(mode);
+      const validatedMode = this.InputValidator.validateMode(mode);
 
       // Find the current project's .claude directory
       const projectInfo = await findClaudeDirectory();
       if (!projectInfo) {
-        const error = SecureErrorHandler.sanitizeError(new Error('No .claude directory found'));
+        const error = this.SecureErrorHandler.sanitizeError(new Error('No .claude directory found'));
         console.error(`❌ ${error.error}`);
         console.error('   Make sure you are running this command from within a Claude Code project.\n');
         return await this.getFallbackAnalysis();
@@ -134,11 +169,11 @@ class ContextCommand {
       return stdout;
     } catch (error) {
       // Use secure error handling
-      const secureError = SecureErrorHandler.sanitizeError(error);
+      const secureError = this.SecureErrorHandler.sanitizeError(error);
       console.error(`❌ Context analysis failed: ${secureError.error}`);
 
       // Log security event
-      SecureErrorHandler.logSecurityEvent('context_analysis_failed', {
+      this.SecureErrorHandler.logSecurityEvent('context_analysis_failed', {
         errorId: secureError.id,
         mode: mode, // Log original mode for debugging
       });
