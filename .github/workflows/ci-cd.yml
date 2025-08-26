@@ -146,39 +146,30 @@ jobs:
           mkdir -p .claude/memory-bank
           mkdir -p .claude/scripts
           
+          # Create basic CLAUDE.md file using echo (cross-platform)
+          echo "# Claude Code Context Command Project" > .claude/CLAUDE.md
+          echo "" >> .claude/CLAUDE.md
+          echo "This is a test project for CI/CD pipeline validation." >> .claude/CLAUDE.md
+          echo "" >> .claude/CLAUDE.md
+          echo "## Project Overview" >> .claude/CLAUDE.md
+          echo "" >> .claude/CLAUDE.md
+          echo "Testing the claude-code-context-command functionality in CI environment." >> .claude/CLAUDE.md
+          echo "" >> .claude/CLAUDE.md
+          echo "## Context" >> .claude/CLAUDE.md
+          echo "" >> .claude/CLAUDE.md
+          echo "The context analyzer should be able to process this minimal project structure for testing purposes." >> .claude/CLAUDE.md
+          
+          # Create basic settings.local.json file using echo (cross-platform)
+          echo "{" > .claude/settings.local.json
+          echo "  \"project_name\": \"claude-code-context-command-test\"," >> .claude/settings.local.json
+          echo "  \"ai_model\": \"claude-3-5-sonnet-20241022\"," >> .claude/settings.local.json
+          echo "  \"context_mode\": \"summary\"," >> .claude/settings.local.json
+          echo "  \"max_tokens\": 200000," >> .claude/settings.local.json
+          echo "  \"test_environment\": true," >> .claude/settings.local.json
+          echo "  \"enabledMcpjsonServers\": []" >> .claude/settings.local.json
+          echo "}" >> .claude/settings.local.json
+          
           echo "✅ .claude directory structure created successfully"
-          
-          # Use Node.js to create files (cross-platform compatible)
-          node -e "
-          const fs = require('fs');
-          
-          const claudemd = \`# Claude Code Context Command Project
-          
-          This is a test project for CI/CD pipeline validation.
-          
-          ## Project Overview
-          
-          Testing the claude-code-context-command functionality in CI environment.
-          
-          ## Context
-          
-          The context analyzer should be able to process this minimal project structure for testing purposes.
-          \`;
-          
-          const settings = {
-            'project_name': 'claude-code-context-command-test',
-            'ai_model': 'claude-3-5-sonnet-20241022',
-            'context_mode': 'summary',
-            'max_tokens': 200000,
-            'test_environment': true,
-            'enabledMcpjsonServers': []
-          };
-          
-          fs.writeFileSync('.claude/CLAUDE.md', claudemd);
-          fs.writeFileSync('.claude/settings.local.json', JSON.stringify(settings, null, 2));
-          
-          console.log('✅ Claude configuration files created');
-          "
 
       - name: Run functional tests
         working-directory: ./scripts
