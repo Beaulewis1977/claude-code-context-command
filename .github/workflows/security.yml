@@ -138,10 +138,9 @@ jobs:
       - name: Upload security test results
         if: always()
         uses: actions/upload-artifact@v4
-        working-directory: ./scripts
         with:
           name: security-test-results-detailed-${{ github.run_id }}
-          path: security-detailed-results.txt
+          path: scripts/security-detailed-results.txt
           retention-days: 90
 
   # Dependency vulnerability scanning
