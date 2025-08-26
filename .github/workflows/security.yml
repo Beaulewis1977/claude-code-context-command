@@ -83,24 +83,24 @@ jobs:
           echo "🔍 Running comprehensive security test suite..."
           
           # Run the security tests with detailed output
-          npm test 2>&1 | tee ../security-detailed-results.txt
+          npm test 2>&1 | tee security-detailed-results.txt
           
           # Check exit status
           if [ ${PIPESTATUS[0]} -eq 0 ]; then
             echo "✅ All security tests passed"
             
             # Count passed tests
-            PASSED_TESTS=$(grep -c "✓" ../security-detailed-results.txt || echo "0")
+            PASSED_TESTS=$(grep -c "✓" security-detailed-results.txt || echo "0")
             echo "📊 Security tests passed: $PASSED_TESTS"
             
             # Check for specific security test categories
             echo "🛡️ Security test categories covered:"
-            grep -E "describe|it.*should" ../security-detailed-results.txt | head -10
+            grep -E "describe|it.*should" security-detailed-results.txt | head -10
             
           else
             echo "❌ Security tests failed"
             echo "📋 Failure details:"
-            grep -E "Error|Failed|×" ../security-detailed-results.txt || echo "No specific errors found"
+            grep -E "Error|Failed|×" security-detailed-results.txt || echo "No specific errors found"
             exit 1
           fi
 
@@ -138,6 +138,7 @@ jobs:
       - name: Upload security test results
         if: always()
         uses: actions/upload-artifact@v4
+        working-directory: ./scripts
         with:
           name: security-test-results-detailed-${{ github.run_id }}
           path: security-detailed-results.txt
