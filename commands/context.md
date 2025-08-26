@@ -1,19 +1,25 @@
 # Context Usage Analysis
 
-I'll analyze your Claude Code session's token usage and context efficiency for the current project, automatically detecting your project's `.claude` configuration.
+I'll analyze your Claude Code session's token usage and context efficiency **before you start working**, helping you understand your setup and optimize for better performance. Automatically detects your project's `.claude` configuration.
 
-**Automated Analysis Available:**
-The `/context` command now uses global scripts that work from any directory:
+**Three Analysis Modes Available:**
+All modes display instantly in Claude Code - no Ctrl+R needed!
+
 ```bash
-# Quick automated analysis
-node ~/.claude/scripts/context-cmd.js
+# Compact mode (22 lines) - fits Claude Code display perfectly
+/context
 
-# Detailed analysis mode
-node ~/.claude/scripts/context-cmd.js standard
+# Standard mode (45 lines) - moderate detail, top servers and agents  
+/context standard
 
-# Summary mode
-node ~/.claude/scripts/context-cmd.js summary
+# Detailed mode (100+ lines) - complete analysis with progress bars
+/context detailed
 ```
+
+**Choose the right mode:**
+- **Quick check before starting work**: `/context` 
+- **Planning optimizations**: `/context standard`
+- **Deep troubleshooting**: `/context detailed`
 
 **What This Analyzes:**
 - **System Prompt**: Base Claude Code instructions (~8.5k tokens)
@@ -53,10 +59,10 @@ Identifies potential inefficiencies:
 - **Oversized Memory**: Large CLAUDE.md files that could be summarized
 
 **Usage Patterns:**
-- `/context` - Run automated analysis for current project
-- `/context summary` - Condensed view with percentages only  
-- `/context standard` - Full analysis with recommendations
-- Direct script execution from any directory within a project
+- `/context` - Quick 22-line overview that fits Claude Code display
+- `/context standard` - Moderate 45-line analysis with top resources
+- `/context detailed` - Complete 100+ line breakdown with progress bars
+- Works from any directory within a project, displays instantly
 
 **Sample Output Format:**
 ```

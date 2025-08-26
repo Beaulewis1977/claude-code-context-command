@@ -8,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { execSync } = require('child_process');
+const { spawnSync } = require('child_process');
 
 // Colors for console output
 const colors = {
@@ -149,10 +149,15 @@ function testInstallation() {
         const originalCwd = process.cwd();
         process.chdir(os.tmpdir());
         
-        execSync(`node "${contextScript}" summary`, { 
+        const result = spawnSync('node', [contextScript, 'summary'], { 
             stdio: 'pipe',
-            timeout: 10000
+            timeout: 10000,
+            encoding: 'utf8'
         });
+        
+        if (result.error || result.status !== 0) {
+            throw new Error(`Script execution failed: ${result.error?.message || result.stderr}`);
+        }
         
         process.chdir(originalCwd);
         printSuccess('Installation test passed');

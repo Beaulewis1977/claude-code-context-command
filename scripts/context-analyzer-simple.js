@@ -6,23 +6,45 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
+import { InputValidator, SecureErrorHandler } from '../lib/security.js';
 
 const estimateTokens = (text) => Math.ceil(text.length / 4);
 
-// Find .claude directory
+// Find .claude directory with security protection
 async function findClaudeDirectory() {
-  let currentPath = process.cwd();
+  let currentPath = path.resolve(process.cwd());
   const root = path.parse(currentPath).root;
+  let iterations = 0;
+  const maxIterations = 50; // Prevent infinite loops
 
-  while (currentPath !== root) {
+  while (currentPath !== root && iterations < maxIterations) {
     const claudePath = path.join(currentPath, '.claude');
+    
+    // Security check: ensure claudePath is within expected bounds
+    if (!claudePath.startsWith(currentPath)) {
+      SecureErrorHandler.logSecurityEvent('path_traversal_attempt_simple', {
+        currentPath: 'REDACTED',
+        claudePath: 'REDACTED'
+      });
+      break;
+    }
+    
     try {
       await fs.access(claudePath);
       return claudePath;
     } catch {
       currentPath = path.dirname(currentPath);
     }
+    
+    iterations++;
   }
+  
+  if (iterations >= maxIterations) {
+    SecureErrorHandler.logSecurityEvent('max_iterations_exceeded_simple', {
+      iterations: maxIterations
+    });
+  }
+  
   return null;
 }
 
@@ -257,7 +279,10 @@ async function analyze() {
   // Format tokens
   const formatTokens = (tokens) => tokens >= 1000 ? `${(tokens/1000).toFixed(1)}k` : `${tokens}`;
 
-  // Generate output
+  // Get mode from command line args, default to compact for /context
+  const mode = process.argv[2] || 'compact';
+  
+  // Generate output based on mode
   let output = `  ⎿  ⛁ ⛁ ⛁ ⛁ ⛀ ⛁ ⛁ ⛁ ⛁ ⛁ \n`;
   output += `     ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁   Context Usage\n`;
   output += `     ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁   claude-sonnet-4 • ${formatTokens(total)}/${formatTokens(maxTokens)} tokens (${usage}%)\n`;
@@ -269,63 +294,112 @@ async function analyze() {
   output += `     ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛀ ⛶ ⛶   ⛁ Memory files: ${formatTokens(memoryFiles)} tokens (${((memoryFiles/total)*100).toFixed(1)}%)\n`;
   output += `     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛶ Free space: ${formatTokens(freeSpace)} (${((freeSpace/maxTokens)*100).toFixed(1)}%)\n\n`;
 
-  // Add MCP tool details grouped by server
-  if (Object.keys(mcpToolsDetailed).length > 0) {
-    output += `     MCP tools · /mcp\n`;
-    
-    // Sort servers by total tokens (descending)
-    const serverTotals = {};
-    for (const [serverName, tools] of Object.entries(mcpToolsDetailed)) {
-      serverTotals[serverName] = tools.reduce((sum, tool) => sum + tool.tokens, 0);
+  // Add detailed breakdown only for 'detailed' or 'standard' mode
+  if (mode === 'detailed' || mode === 'standard') {
+    // Add MCP tool details grouped by server
+    if (Object.keys(mcpToolsDetailed).length > 0) {
+      output += `     MCP tools · /mcp\n`;
+      
+      // Sort servers by total tokens (descending)
+      const serverTotals = {};
+      for (const [serverName, tools] of Object.entries(mcpToolsDetailed)) {
+        serverTotals[serverName] = tools.reduce((sum, tool) => sum + tool.tokens, 0);
+      }
+      
+      const sortedServers = Object.entries(serverTotals)
+        .sort(([,a], [,b]) => b - a);
+      
+      // Show only top 5 servers in standard mode, all in detailed mode
+      const maxServers = mode === 'detailed' ? sortedServers.length : Math.min(5, sortedServers.length);
+      
+      for (let i = 0; i < maxServers; i++) {
+        const [serverName, serverTotal] = sortedServers[i];
+        const serverTokenStr = formatTokens(serverTotal);
+        output += `     └ ${serverName} server: ${serverTokenStr} total tokens\n`;
+        
+        // Show individual tools for this server, sorted by tokens (descending)
+        const tools = mcpToolsDetailed[serverName];
+        const sortedTools = tools.sort((a, b) => b.tokens - a.tokens);
+        
+        // Show only top 3 tools per server in standard mode, all in detailed mode
+        const maxTools = mode === 'detailed' ? sortedTools.length : Math.min(3, sortedTools.length);
+        
+        for (let j = 0; j < maxTools; j++) {
+          const tool = sortedTools[j];
+          const tokenStr = formatTokens(tool.tokens);
+          output += `       └ ${tool.name}: ${tokenStr} tokens\n`;
+        }
+      }
+      output += `\n`;
     }
-    
-    const sortedServers = Object.entries(serverTotals)
+  } else {
+    // Compact mode - show only top 3 MCP servers
+    if (Object.keys(mcpToolsDetailed).length > 0) {
+      output += `     Top MCP servers:\n`;
+      
+      const serverTotals = {};
+      for (const [serverName, tools] of Object.entries(mcpToolsDetailed)) {
+        serverTotals[serverName] = tools.reduce((sum, tool) => sum + tool.tokens, 0);
+      }
+      
+      const sortedServers = Object.entries(serverTotals)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3);
+      
+      for (const [serverName, serverTotal] of sortedServers) {
+        const serverTokenStr = formatTokens(serverTotal);
+        output += `     └ ${serverName}: ${serverTokenStr} tokens\n`;
+      }
+      output += `\n`;
+    }
+  }
+
+  // Add agent details - compact by default, detailed in standard/detailed modes
+  if (Object.keys(agentBreakdown).length > 0) {
+    const sortedAgents = Object.entries(agentBreakdown)
       .sort(([,a], [,b]) => b - a);
     
-    for (const [serverName, serverTotal] of sortedServers) {
-      const serverTokenStr = formatTokens(serverTotal);
-      output += `     └ ${serverName} server: ${serverTokenStr} total tokens\n`;
+    if (mode === 'detailed' || mode === 'standard') {
+      output += `     Custom agents · /agents\n`;
+      const maxAgents = mode === 'detailed' ? sortedAgents.length : Math.min(5, sortedAgents.length);
       
-      // Show individual tools for this server, sorted by tokens (descending)
-      const tools = mcpToolsDetailed[serverName];
-      const sortedTools = tools.sort((a, b) => b.tokens - a.tokens);
-      
-      for (const tool of sortedTools) {
-        const tokenStr = formatTokens(tool.tokens);
-        output += `       └ ${tool.name}: ${tokenStr} tokens\n`;
+      for (let i = 0; i < maxAgents; i++) {
+        const [file, tokens] = sortedAgents[i];
+        const agentName = file.replace('.md', '');
+        const tokenStr = formatTokens(tokens);
+        output += `     └ ${agentName} (Project): ${tokenStr} tokens\n`;
       }
+      output += `\n`;
+    } else {
+      // Compact mode - show only top 3 agents
+      output += `     Top agents: `;
+      const topAgents = sortedAgents.slice(0, 3);
+      output += topAgents.map(([file, tokens]) => `${file.replace('.md', '')} (${formatTokens(tokens)})`).join(', ');
+      output += `\n\n`;
     }
-    output += `\n`;
   }
 
-  // Add agent details
-  if (Object.keys(agentBreakdown).length > 0) {
-    output += `     Custom agents · /agents\n`;
-    
-    const sortedAgents = Object.entries(agentBreakdown)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 10);
-      
-    for (const [file, tokens] of sortedAgents) {
-      const agentName = file.replace('.md', '');
-      const tokenStr = formatTokens(tokens);
-      output += `     └ ${agentName} (Project): ${tokenStr} tokens\n`;
-    }
-    output += `\n`;
+  // Add memory files - compact by default
+  if (mode === 'detailed' || mode === 'standard') {
+    output += `     Memory files · /memory\n`;
+    output += `     └ Project (${claudeDir}/CLAUDE.md): ${formatTokens(memoryFiles)} tokens\n\n`;
+  } else {
+    output += `     Memory: ${formatTokens(memoryFiles)} tokens from CLAUDE.md\n\n     Use 'standard' or 'detailed' for more info\n\n`;
   }
 
-  // Add memory files
-  output += `     Memory files · /memory\n`;
-  output += `     └ Project (${claudeDir}/CLAUDE.md): ${formatTokens(memoryFiles)} tokens\n\n`;
-
-  // Add recommendations
-  if (mcpTools > 100000) {
+  // Add recommendations only for standard/detailed modes
+  if ((mode === 'detailed' || mode === 'standard') && mcpTools > 100000) {
     output += `Optimization Recommendations:\n\n`;
     output += `High Impact (>10% token reduction):\n`;
     output += `- **Consolidate MCP Servers**: Consider disabling unused MCP servers (20-40k tokens)\n`;
   }
 
-  console.log(output);
+  // Force output to display immediately by using process.stdout directly
+  process.stdout.write(output);
+  // Force flush stdout to ensure immediate display
+  if (process.stdout.isTTY === false) {
+    process.stdout.write('');
+  }
 }
 
 analyze().catch(console.error);

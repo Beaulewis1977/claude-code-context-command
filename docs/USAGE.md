@@ -4,27 +4,61 @@ Complete guide for using the Claude Code Context Command effectively.
 
 ## Quick Start
 
-Once installed, you have two main ways to use the context analyzer:
+Once installed, use the `/context` command **before starting work** to understand your setup. Choose the right mode for your needs:
 
 ### 1. Claude Code Slash Command (Recommended)
 
 ```
-/context                    # Standard analysis with recommendations
-/context summary           # Quick overview with percentages
-/context standard          # Full detailed analysis
+/context                    # Compact (22 lines) - quick pre-work check
+/context standard          # Moderate (45 lines) - planning & optimization  
+/context detailed          # Full (100+ lines) - deep analysis & troubleshooting
 ```
+
+**All modes display instantly - no Ctrl+R needed!**
 
 ### 2. Direct Command Line Usage
 
 ```bash
-node ~/.claude/scripts/context-cmd.js
-node ~/.claude/scripts/context-cmd.js summary  
-node ~/.claude/scripts/context-cmd.js standard
+node ~/.claude/scripts/context-cmd.js              # Compact mode (default)
+node ~/.claude/scripts/context-cmd.js standard     # Moderate detail
+node ~/.claude/scripts/context-cmd.js detailed     # Full analysis
 ```
+
+## Understanding the Three Modes
+
+### Compact Mode (`/context`)
+**Perfect for:** Quick pre-work checks
+**Output:** 22 lines that fit Claude Code display perfectly
+
+- Essential token breakdown with percentages
+- Top 3 MCP servers by usage
+- Top 3 agents in one line summary  
+- Memory file size
+- Helpful hint about other modes
+
+### Standard Mode (`/context standard`)
+**Perfect for:** Planning and optimization
+**Output:** ~45 lines with moderate detail
+
+- Complete token breakdown 
+- Top 5 MCP servers with top 3 tools each
+- Top 5 custom agents listed individually
+- Detailed memory file information
+- Shows enough detail for optimization decisions
+
+### Detailed Mode (`/context detailed`) 
+**Perfect for:** Deep analysis and troubleshooting
+**Output:** 100+ lines with beautiful progress bars
+
+- Full visual progress bars for each category
+- Complete listing of ALL MCP tools by server
+- Every custom agent with individual token counts
+- Comprehensive optimization recommendations
+- Best for understanding performance issues
 
 ## Understanding the Output
 
-### Standard Mode Output
+### Example: Standard Mode Output
 
 ```
   ⎿  ⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛁⛀⛶⛶⛶⛶

@@ -9,6 +9,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { InputValidator, SecureFileOperations, SecureErrorHandler } from '../lib/security.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -89,13 +90,39 @@ const cleanupCache = () => {
 
 /**
  * Find the nearest .claude directory by walking up the directory tree
+ * Includes path traversal protection
  */
 async function findClaudeDirectory(startPath = process.cwd()) {
-  let currentPath = path.resolve(startPath);
+  // Validate and sanitize start path
+  let currentPath;
+  try {
+    const validatedStartPath = InputValidator.validatePath(startPath);
+    currentPath = path.resolve(validatedStartPath);
+  } catch (error) {
+    SecureErrorHandler.logSecurityEvent('invalid_start_path_analyzer', { 
+      startPath: 'REDACTED',
+      error: error.message 
+    });
+    // Fall back to current working directory if start path is invalid
+    currentPath = path.resolve(process.cwd());
+  }
+  
   const root = path.parse(currentPath).root;
+  let iterations = 0;
+  const maxIterations = 50; // Prevent infinite loops
 
-  while (currentPath !== root) {
+  while (currentPath !== root && iterations < maxIterations) {
     const claudePath = path.join(currentPath, '.claude');
+    
+    // Additional security: ensure claudePath is within expected bounds
+    if (!claudePath.startsWith(currentPath)) {
+      SecureErrorHandler.logSecurityEvent('path_traversal_attempt_analyzer', {
+        currentPath: 'REDACTED',
+        claudePath: 'REDACTED'
+      });
+      break;
+    }
+    
     try {
       const stat = await fs.stat(claudePath);
       if (stat.isDirectory()) {
@@ -104,7 +131,15 @@ async function findClaudeDirectory(startPath = process.cwd()) {
     } catch (error) {
       // Directory doesn't exist, continue searching
     }
+    
     currentPath = path.dirname(currentPath);
+    iterations++;
+  }
+  
+  if (iterations >= maxIterations) {
+    SecureErrorHandler.logSecurityEvent('max_iterations_exceeded_analyzer', {
+      iterations: maxIterations
+    });
   }
   
   return null;
@@ -845,7 +880,13 @@ if (isMainModule) {
     const analyzer = new ContextAnalyzer();
     
     analyzer.analyze().then(results => {
-      console.log(analyzer.formatResults(mode));
+      const output = analyzer.formatResults(mode);
+      // Force output to display immediately by using process.stdout directly
+      process.stdout.write(output + '\n');
+      // Force flush stdout to ensure immediate display
+      if (process.stdout.isTTY === false) {
+        process.stdout.write('');
+      }
     }).catch(error => {
       console.error('Error:', error.message);
       process.exit(1);

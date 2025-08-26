@@ -5,6 +5,10 @@
   "description": "Global context analysis scripts for Claude Code",
   "scripts": {
     "context": "node context-cmd.js",
-    "analyze": "node context-analyzer.js"
+    "analyze": "node context-analyzer.js",
+    "security-test": "node ../tests/security.test.js"
+  },
+  "devDependencies": {
+    "mocha": "^10.0.0"
   }
 }

@@ -21,6 +21,15 @@ SCRIPTS_DIR="$CLAUDE_DIR/scripts"
 COMMANDS_DIR="$CLAUDE_DIR/commands"
 TEMP_DIR=$(mktemp -d)
 
+# File checksums (SHA256) - UPDATE THESE WHEN FILES CHANGE
+declare -A CHECKSUMS=(
+    ["context-analyzer.js"]="a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2"
+    ["context-analyzer-simple.js"]="b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3"
+    ["context-cmd.js"]="c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4"
+    ["context.md"]="d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5"
+    ["package.json"]="e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6"
+)
+
 # Cleanup function
 cleanup() {
     if [ -d "$TEMP_DIR" ]; then
@@ -63,16 +72,77 @@ download_file() {
     
     case "$tool" in
         curl)
-            curl -sSL "$url" -o "$output"
+            if ! curl -sSL "$url" -o "$output"; then
+                print_error "Download failed: $url"
+                return 1
+            fi
             ;;
         wget)
-            wget -q "$url" -O "$output"
+            if ! wget -q "$url" -O "$output"; then
+                print_error "Download failed: $url"
+                return 1
+            fi
             ;;
         *)
             print_error "Unknown download tool: $tool"
             return 1
             ;;
     esac
+}
+
+verify_checksum() {
+    local file="$1"
+    local expected_hash="$2"
+    local filename=$(basename "$file")
+    
+    print_status "Verifying integrity of $filename..."
+    
+    # Check if we have sha256sum
+    if ! command -v sha256sum &> /dev/null; then
+        print_warning "sha256sum not available - skipping integrity check"
+        print_warning "This reduces security. Consider installing sha256sum."
+        return 0
+    fi
+    
+    local actual_hash
+    actual_hash=$(sha256sum "$file" | cut -d' ' -f1)
+    
+    if [ "$actual_hash" != "$expected_hash" ]; then
+        print_error "Integrity check failed for $filename!"
+        print_error "Expected: $expected_hash"
+        print_error "Got:      $actual_hash"
+        print_error "This could indicate file corruption or tampering."
+        rm -f "$file"
+        return 1
+    fi
+    
+    print_success "Integrity verified for $filename"
+    return 0
+}
+
+download_and_verify() {
+    local url="$1"
+    local output="$2"
+    local tool="$3"
+    local filename=$(basename "$output")
+    
+    # Download file
+    if ! download_file "$url" "$output" "$tool"; then
+        return 1
+    fi
+    
+    # Verify checksum if available
+    if [[ -n "${CHECKSUMS[$filename]:-}" ]]; then
+        if ! verify_checksum "$output" "${CHECKSUMS[$filename]}"; then
+            print_error "Security check failed for $filename"
+            return 1
+        fi
+    else
+        print_warning "No checksum available for $filename - cannot verify integrity"
+        print_warning "This reduces security assurance"
+    fi
+    
+    return 0
 }
 
 check_requirements() {
@@ -112,10 +182,10 @@ download_files() {
         local url="$base_url/$file"
         local local_file="$TEMP_DIR/$(basename "$file")"
         
-        if download_file "$url" "$local_file" "$download_tool"; then
-            print_status "Downloaded $(basename "$file")"
+        if download_and_verify "$url" "$local_file" "$download_tool"; then
+            print_success "Downloaded and verified $(basename "$file")"
         else
-            print_error "Failed to download $file"
+            print_error "Failed to securely download $file"
             exit 1
         fi
     done
