@@ -69,16 +69,16 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
-          cache-dependency-path: 'claude-code-context-command/scripts/package.json'
+          cache-dependency-path: 'scripts/package.json'
 
       - name: Install dependencies
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: |
           echo "📦 Installing dependencies for security testing..."
           npm ci --only=dev
 
       - name: Run comprehensive security test suite
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: |
           echo "🔍 Running comprehensive security test suite..."
           
@@ -105,30 +105,34 @@ jobs:
           fi
 
       - name: Validate security module integrity
-        working-directory: ./claude-code-context-command
+        working-directory: ./
         run: |
           echo "🔐 Validating security module integrity..."
           
           # Test security module functions
           node -e "
-            const security = require('./lib/security.js');
-            const tests = [
-              () => security.InputValidator.validateMode('compact'),
-              () => security.InputValidator.validateMode('standard'),
-              () => security.InputValidator.validateMode('detailed'),
-            ];
-            
-            tests.forEach((test, i) => {
-              try {
-                test();
-                console.log(\`✅ Security test \${i + 1} passed\`);
-              } catch (error) {
-                console.error(\`❌ Security test \${i + 1} failed:\`, error.message);
-                process.exit(1);
-              }
+            import('./lib/security.js').then(security => {
+              const tests = [
+                () => security.InputValidator.validateMode('compact'),
+                () => security.InputValidator.validateMode('standard'),
+                () => security.InputValidator.validateMode('detailed'),
+              ];
+              
+              tests.forEach((test, i) => {
+                try {
+                  test();
+                  console.log(\`✅ Security test \${i + 1} passed\`);
+                } catch (error) {
+                  console.error(\`❌ Security test \${i + 1} failed:\`, error.message);
+                  process.exit(1);
+                }
+              });
+              
+              console.log('✅ Security module integrity verified');
+            }).catch(error => {
+              console.error('❌ Failed to import security module:', error);
+              process.exit(1);
             });
-            
-            console.log('✅ Security module integrity verified');
           "
 
       - name: Upload security test results
@@ -136,7 +140,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: security-test-results-detailed-${{ github.run_id }}
-          path: claude-code-context-command/security-detailed-results.txt
+          path: security-detailed-results.txt
           retention-days: 90
 
   # Dependency vulnerability scanning
@@ -154,14 +158,14 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
-          cache-dependency-path: 'claude-code-context-command/scripts/package.json'
+          cache-dependency-path: 'scripts/package.json'
 
       - name: Install dependencies
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: npm ci
 
       - name: Run npm audit
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: |
           echo "🔍 Running npm audit for vulnerability scanning..."
           
@@ -195,7 +199,7 @@ jobs:
           fi
 
       - name: Check for known security issues
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: |
           echo "🔍 Checking for known security patterns..."
           
@@ -217,7 +221,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dependency-audit-results-${{ github.run_id }}
-          path: claude-code-context-command/scripts/audit-results.json
+          path: scripts/audit-results.json
           retention-days: 30
 
   # Secret scanning
@@ -250,7 +254,7 @@ jobs:
           
           for pattern in "${SECRET_PATTERNS[@]}"; do
             echo "Checking pattern: $pattern"
-            if grep -r -E -i "$pattern" claude-code-context-command/ --exclude-dir=node_modules --exclude="*.md" 2>/dev/null; then
+            if grep -r -E -i "$pattern" . --exclude-dir=node_modules --exclude="*.md" 2>/dev/null; then
               echo "⚠️  Potential secret found with pattern: $pattern"
               SECRETS_FOUND=$((SECRETS_FOUND + 1))
             fi
@@ -269,7 +273,7 @@ jobs:
           echo "🔍 Checking for test secrets that might be real..."
           
           # Look for realistic-looking test data that might be real secrets
-          if grep -r -E "(sk-|pk_|ghp_|gho_|ghu_|ghs_)" claude-code-context-command/ --exclude-dir=node_modules 2>/dev/null; then
+          if grep -r -E "(sk-|pk_|ghp_|gho_|ghu_|ghs_)" . --exclude-dir=node_modules 2>/dev/null; then
             echo "⚠️  Found patterns that look like real API keys/tokens"
             echo "Please verify these are actually test data and not real secrets"
           else
@@ -291,14 +295,14 @@ jobs:
           echo "🔒 Checking file permissions and security configuration..."
           
           # Check for overly permissive files
-          find claude-code-context-command -type f -perm /o+w 2>/dev/null | while read file; do
+          find . -type f -perm /o+w 2>/dev/null | while read file; do
             echo "⚠️  World-writable file found: $file"
           done
           
           # Check installer script permissions
           INSTALLERS=(
-            "claude-code-context-command/installers/install.sh"
-            "claude-code-context-command/installers/install.ps1"
+            "installers/install.sh"
+            "installers/install.ps1"
           )
           
           for installer in "${INSTALLERS[@]}"; do
@@ -317,19 +321,19 @@ jobs:
           echo "📋 Validating configuration file security..."
           
           # Check package.json for security issues
-          if [ -f "claude-code-context-command/scripts/package.json" ]; then
+          if [ -f "scripts/package.json" ]; then
             echo "Checking package.json..."
             
             # Look for postinstall scripts (potential security risk)
-            if grep -q '"postinstall"' claude-code-context-command/scripts/package.json; then
+            if grep -q '"postinstall"' scripts/package.json; then
               echo "⚠️  postinstall script found - review for security"
-              grep -A2 -B2 '"postinstall"' claude-code-context-command/scripts/package.json
+              grep -A2 -B2 '"postinstall"' scripts/package.json
             else
               echo "✅ No postinstall scripts found"
             fi
             
             # Check for scripts that might be dangerous
-            if grep -E '"(rm|curl|wget|eval)"' claude-code-context-command/scripts/package.json; then
+            if grep -E '"(rm|curl|wget|eval)"' scripts/package.json; then
               echo "⚠️  Potentially dangerous commands in package.json scripts"
             else
               echo "✅ Package.json scripts appear safe"

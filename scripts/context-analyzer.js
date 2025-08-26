@@ -8,29 +8,12 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { InputValidator, SecureFileOperations, SecureErrorHandler } from '../lib/security.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { InputValidator, SecureErrorHandler } from '../lib/security.js';
 
 // Rough token estimation (1 token ≈ 4 characters for English text)
-const estimateTokens = (text) => Math.ceil(text.length / 4);
+const estimateTokens = text => Math.ceil(text.length / 4);
 
-// Progress bar generator using proper Unicode characters
-const generateProgressBar = (percentage, width = 20) => {
-  // Ensure percentage is within valid bounds
-  const clampedPercentage = Math.max(0, Math.min(100, percentage || 0));
-  const filled = Math.round((clampedPercentage / 100) * width);
-  const empty = Math.max(0, width - filled);
-  
-  // Create the progress bar
-  let bar = '⛁'.repeat(filled);
-  bar += '⛶'.repeat(empty);
-  
-  // Ensure exact width
-  return bar.slice(0, width).padEnd(width, '⛶');
-};
+// Progress bar generator using proper Unicode characters (removed as unused)
 
 // Cache for performance optimization with better memory management
 const cache = {
@@ -41,45 +24,43 @@ const cache = {
   projectPath: null,
   ttl: 300000, // 5 minutes cache for better performance
   fileCache: new Map(),
-  fileCacheTtl: 600000 // 10 minutes for file content cache
+  fileCacheTtl: 600000, // 10 minutes for file content cache
 };
 
-const isCacheValid = (projectPath) => {
-  return cache.timestamp && 
-         cache.projectPath === projectPath &&
-         (Date.now() - cache.timestamp) < cache.ttl;
+const isCacheValid = projectPath => {
+  return cache.timestamp && cache.projectPath === projectPath && Date.now() - cache.timestamp < cache.ttl;
 };
 
-const isFileCacheValid = (filePath) => {
+const isFileCacheValid = filePath => {
   const entry = cache.fileCache.get(filePath);
-  return entry && (Date.now() - entry.timestamp) < cache.fileCacheTtl;
+  return entry && Date.now() - entry.timestamp < cache.fileCacheTtl;
 };
 
 // Cache cleanup to prevent memory leaks
 const cleanupCache = () => {
   const now = Date.now();
-  
+
   // Clean up file cache
   for (const [filePath, entry] of cache.fileCache.entries()) {
-    if ((now - entry.timestamp) > cache.fileCacheTtl) {
+    if (now - entry.timestamp > cache.fileCacheTtl) {
       cache.fileCache.delete(filePath);
     }
   }
-  
+
   // Clean up main cache if expired
-  if (cache.timestamp && (now - cache.timestamp) > cache.ttl) {
+  if (cache.timestamp && now - cache.timestamp > cache.ttl) {
     cache.mcpTools = null;
     cache.customAgents = null;
     cache.memoryFiles = null;
     cache.timestamp = null;
     cache.projectPath = null;
   }
-  
+
   // Prevent file cache from growing too large
   if (cache.fileCache.size > 100) {
     const entries = Array.from(cache.fileCache.entries());
     entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-    
+
     // Keep only the 50 most recent entries
     cache.fileCache.clear();
     entries.slice(-50).forEach(([path, data]) => {
@@ -99,30 +80,30 @@ async function findClaudeDirectory(startPath = process.cwd()) {
     const validatedStartPath = InputValidator.validatePath(startPath);
     currentPath = path.resolve(validatedStartPath);
   } catch (error) {
-    SecureErrorHandler.logSecurityEvent('invalid_start_path_analyzer', { 
+    SecureErrorHandler.logSecurityEvent('invalid_start_path_analyzer', {
       startPath: 'REDACTED',
-      error: error.message 
+      error: error.message,
     });
     // Fall back to current working directory if start path is invalid
     currentPath = path.resolve(process.cwd());
   }
-  
+
   const root = path.parse(currentPath).root;
   let iterations = 0;
   const maxIterations = 50; // Prevent infinite loops
 
   while (currentPath !== root && iterations < maxIterations) {
     const claudePath = path.join(currentPath, '.claude');
-    
+
     // Additional security: ensure claudePath is within expected bounds
     if (!claudePath.startsWith(currentPath)) {
       SecureErrorHandler.logSecurityEvent('path_traversal_attempt_analyzer', {
         currentPath: 'REDACTED',
-        claudePath: 'REDACTED'
+        claudePath: 'REDACTED',
       });
       break;
     }
-    
+
     try {
       const stat = await fs.stat(claudePath);
       if (stat.isDirectory()) {
@@ -131,17 +112,17 @@ async function findClaudeDirectory(startPath = process.cwd()) {
     } catch (error) {
       // Directory doesn't exist, continue searching
     }
-    
+
     currentPath = path.dirname(currentPath);
     iterations++;
   }
-  
+
   if (iterations >= maxIterations) {
     SecureErrorHandler.logSecurityEvent('max_iterations_exceeded_analyzer', {
-      iterations: maxIterations
+      iterations: maxIterations,
     });
   }
-  
+
   return null;
 }
 
@@ -158,19 +139,21 @@ class ContextAnalyzer {
       total: 0,
       breakdown: {},
       optimization: [],
-      projectPath: this.projectRoot
+      projectPath: this.projectRoot,
     };
   }
 
   async initialize() {
     // Clean up cache before starting
     cleanupCache();
-    
+
     // If no directory specified, find the nearest .claude directory
     if (!this.claudeDir) {
       this.claudeDir = await findClaudeDirectory();
       if (!this.claudeDir) {
-        throw new Error('No .claude directory found in current path or parent directories. Run this command from within a Claude Code project.');
+        throw new Error(
+          'No .claude directory found in current path or parent directories. Run this command from within a Claude Code project.'
+        );
       }
       this.projectRoot = path.dirname(this.claudeDir);
       this.results.projectPath = this.projectRoot;
@@ -200,7 +183,7 @@ class ContextAnalyzer {
       // Try local settings first, then fall back to global
       let settingsPath = path.join(this.claudeDir, 'settings.local.json');
       let settings;
-      
+
       try {
         settings = JSON.parse(await fs.readFile(settingsPath, 'utf8'));
       } catch (error) {
@@ -208,27 +191,27 @@ class ContextAnalyzer {
         settingsPath = path.join(process.env.HOME, '.claude', 'settings.local.json');
         settings = JSON.parse(await fs.readFile(settingsPath, 'utf8'));
       }
-      
+
       const enabledServers = settings.enabledMcpjsonServers || [];
-      
+
       // Comprehensive MCP tool database with exact token counts
       const mcpToolsData = {
-        'fetch': {
+        fetch: {
           total: 643,
-          tools: [{ name: 'mcp__fetch__fetch', tokens: 643 }]
+          tools: [{ name: 'mcp__fetch__fetch', tokens: 643 }],
         },
         'sequential-thinking': {
           total: 1300,
-          tools: [{ name: 'mcp__sequential-thinking__sequentialthinking', tokens: 1300 }]
+          tools: [{ name: 'mcp__sequential-thinking__sequentialthinking', tokens: 1300 }],
         },
         'byterover-mcp': {
           total: 968,
           tools: [
             { name: 'mcp__byterover-mcp__byterover-retrieve-knowledge', tokens: 456 },
-            { name: 'mcp__byterover-mcp__byterover-store-knowledge', tokens: 512 }
-          ]
+            { name: 'mcp__byterover-mcp__byterover-store-knowledge', tokens: 512 },
+          ],
         },
-        'puppeteer': {
+        puppeteer: {
           total: 1815,
           tools: [
             { name: 'mcp__puppeteer__puppeteer_navigate', tokens: 432 },
@@ -236,8 +219,8 @@ class ContextAnalyzer {
             { name: 'mcp__puppeteer__puppeteer_click', tokens: 287 },
             { name: 'mcp__puppeteer__puppeteer_fill', tokens: 298 },
             { name: 'mcp__puppeteer__puppeteer_select', tokens: 210 },
-            { name: 'mcp__puppeteer__puppeteer_hover', tokens: 190 }
-          ]
+            { name: 'mcp__puppeteer__puppeteer_hover', tokens: 190 },
+          ],
         },
         'mcp-playwright': {
           total: 15234,
@@ -261,10 +244,10 @@ class ContextAnalyzer {
             { name: 'mcp__mcp-playwright__playwright_delete', tokens: 156 },
             { name: 'mcp__mcp-playwright__playwright_expect_response', tokens: 387 },
             { name: 'mcp__mcp-playwright__playwright_assert_response', tokens: 334 },
-            { name: 'mcp__mcp-playwright__playwright_close', tokens: 123 }
-          ]
+            { name: 'mcp__mcp-playwright__playwright_close', tokens: 123 },
+          ],
         },
-        'everything': {
+        everything: {
           total: 2167,
           tools: [
             { name: 'mcp__everything__echo', tokens: 198 },
@@ -274,8 +257,8 @@ class ContextAnalyzer {
             { name: 'mcp__everything__sampleLLM', tokens: 298 },
             { name: 'mcp__everything__getTinyImage', tokens: 134 },
             { name: 'mcp__everything__annotatedMessage', tokens: 445 },
-            { name: 'mcp__everything__getResourceReference', tokens: 382 }
-          ]
+            { name: 'mcp__everything__getResourceReference', tokens: 382 },
+          ],
         },
         'github-official': {
           total: 12456,
@@ -305,8 +288,8 @@ class ContextAnalyzer {
             { name: 'mcp__github-official__get_pull_request_status', tokens: 298 },
             { name: 'mcp__github-official__update_pull_request_branch', tokens: 387 },
             { name: 'mcp__github-official__get_pull_request_comments', tokens: 345 },
-            { name: 'mcp__github-official__get_pull_request_reviews', tokens: 323 }
-          ]
+            { name: 'mcp__github-official__get_pull_request_reviews', tokens: 323 },
+          ],
         },
         'mcp-filesystem': {
           total: 4234,
@@ -322,22 +305,22 @@ class ContextAnalyzer {
             { name: 'mcp__mcp-filesystem__move_file', tokens: 298 },
             { name: 'mcp__mcp-filesystem__search_files', tokens: 387 },
             { name: 'mcp__mcp-filesystem__get_file_info', tokens: 334 },
-            { name: 'mcp__mcp-filesystem__list_allowed_directories', tokens: 191 }
-          ]
+            { name: 'mcp__mcp-filesystem__list_allowed_directories', tokens: 191 },
+          ],
         },
         'context7-mcp': {
           total: 1023,
           tools: [
             { name: 'mcp__context7-mcp__resolve-library-id', tokens: 567 },
-            { name: 'mcp__context7-mcp__get-library-docs', tokens: 456 }
-          ]
+            { name: 'mcp__context7-mcp__get-library-docs', tokens: 456 },
+          ],
         },
         'brave-search': {
           total: 823,
           tools: [
             { name: 'mcp__brave-search__brave_web_search', tokens: 434 },
-            { name: 'mcp__brave-search__brave_local_search', tokens: 389 }
-          ]
+            { name: 'mcp__brave-search__brave_local_search', tokens: 389 },
+          ],
         },
         'deep-code-reasoning': {
           total: 4267,
@@ -351,10 +334,10 @@ class ContextAnalyzer {
             { name: 'mcp__deep-code-reasoning__continue_conversation', tokens: 334 },
             { name: 'mcp__deep-code-reasoning__finalize_conversation', tokens: 267 },
             { name: 'mcp__deep-code-reasoning__get_conversation_status', tokens: 234 },
-            { name: 'mcp__deep-code-reasoning__run_hypothesis_tournament', tokens: 407 }
-          ]
+            { name: 'mcp__deep-code-reasoning__run_hypothesis_tournament', tokens: 407 },
+          ],
         },
-        'supabase': {
+        supabase: {
           total: 14567,
           tools: [
             { name: 'mcp__supabase__list_organizations', tokens: 298 },
@@ -384,8 +367,8 @@ class ContextAnalyzer {
             { name: 'mcp__supabase__generate_typescript_types', tokens: 298 },
             { name: 'mcp__supabase__search_docs', tokens: 1234 },
             { name: 'mcp__supabase__list_edge_functions', tokens: 234 },
-            { name: 'mcp__supabase__deploy_edge_function', tokens: 623 }
-          ]
+            { name: 'mcp__supabase__deploy_edge_function', tokens: 623 },
+          ],
         },
         'zen-mcp-server': {
           total: 20456,
@@ -405,8 +388,8 @@ class ContextAnalyzer {
             { name: 'mcp__zen__testgen', tokens: 1234 },
             { name: 'mcp__zen__challenge', tokens: 389 },
             { name: 'mcp__zen__listmodels', tokens: 234 },
-            { name: 'mcp__zen__version', tokens: 156 }
-          ]
+            { name: 'mcp__zen__version', tokens: 156 },
+          ],
         },
         'claude-flow_Docs': {
           total: 1234,
@@ -414,24 +397,22 @@ class ContextAnalyzer {
             { name: 'mcp__claude-flow_Docs__fetch_claude_flow_documentation', tokens: 298 },
             { name: 'mcp__claude-flow_Docs__search_claude_flow_documentation', tokens: 345 },
             { name: 'mcp__claude-flow_Docs__search_claude_flow_code', tokens: 367 },
-            { name: 'mcp__claude-flow_Docs__fetch_generic_url_content', tokens: 224 }
-          ]
+            { name: 'mcp__claude-flow_Docs__fetch_generic_url_content', tokens: 224 },
+          ],
         },
         'perplexity-mcp': {
           total: 345,
-          tools: [
-            { name: 'mcp__perplexity-mcp__perplexity_search_web', tokens: 345 }
-          ]
+          tools: [{ name: 'mcp__perplexity-mcp__perplexity_search_web', tokens: 345 }],
         },
         'Prisma-Local': {
           total: 1123,
           tools: [
             { name: 'mcp__Prisma-Local__migrate-status', tokens: 367 },
             { name: 'mcp__Prisma-Local__migrate-dev', tokens: 423 },
-            { name: 'mcp__Prisma-Local__migrate-reset', tokens: 333 }
-          ]
+            { name: 'mcp__Prisma-Local__migrate-reset', tokens: 333 },
+          ],
         },
-        'firecrawl': {
+        firecrawl: {
           total: 6756,
           tools: [
             { name: 'mcp__firecrawl__firecrawl_scrape', tokens: 1534 },
@@ -439,8 +420,8 @@ class ContextAnalyzer {
             { name: 'mcp__firecrawl__firecrawl_crawl', tokens: 1634 },
             { name: 'mcp__firecrawl__firecrawl_check_crawl_status', tokens: 507 },
             { name: 'mcp__firecrawl__firecrawl_search', tokens: 1298 },
-            { name: 'mcp__firecrawl__firecrawl_extract', tokens: 1045 }
-          ]
+            { name: 'mcp__firecrawl__firecrawl_extract', tokens: 1045 },
+          ],
         },
         'BMAD-METHOD DOCS': {
           total: 1456,
@@ -448,8 +429,8 @@ class ContextAnalyzer {
             { name: 'mcp__BMAD-METHOD_Docs__fetch_BMAD_METHOD_documentation', tokens: 423 },
             { name: 'mcp__BMAD-METHOD_Docs__search_BMAD_METHOD_documentation', tokens: 456 },
             { name: 'mcp__BMAD-METHOD_Docs__search_BMAD_METHOD_code', tokens: 387 },
-            { name: 'mcp__BMAD-METHOD_Docs__fetch_generic_url_content', tokens: 190 }
-          ]
+            { name: 'mcp__BMAD-METHOD_Docs__fetch_generic_url_content', tokens: 190 },
+          ],
         },
         'awesome-ui-component-library Docs': {
           total: 1234,
@@ -457,15 +438,15 @@ class ContextAnalyzer {
             { name: 'mcp__awesome-ui-component-library_Docs__fetch_awesome_docs', tokens: 334 },
             { name: 'mcp__awesome-ui-component-library_Docs__search_repo_docs', tokens: 387 },
             { name: 'mcp__awesome-ui-component-library_Docs__search_repo_code', tokens: 298 },
-            { name: 'mcp__awesome-ui-component-library_Docs__fetch_generic_url_content', tokens: 215 }
-          ]
-        }
+            { name: 'mcp__awesome-ui-component-library_Docs__fetch_generic_url_content', tokens: 215 },
+          ],
+        },
       };
 
       let mcpTotal = 0;
       const breakdown = {};
       const detailed = {};
-      
+
       for (const server of enabledServers) {
         if (mcpToolsData[server]) {
           const serverData = mcpToolsData[server];
@@ -480,20 +461,19 @@ class ContextAnalyzer {
           detailed[server] = [{ name: `mcp__${server}__unknown`, tokens }];
         }
       }
-      
+
       this.results.mcpTools = mcpTotal;
       this.results.breakdown.mcpServers = breakdown;
       this.results.breakdown.mcpToolsDetailed = detailed;
-      
+
       // Cache the results
       cache.mcpTools = {
         total: mcpTotal,
         breakdown,
-        detailed
+        detailed,
       };
       cache.timestamp = Date.now();
       cache.projectPath = this.projectRoot;
-      
     } catch (error) {
       console.error('Error analyzing MCP tools:', error.message);
       this.results.mcpTools = 120000; // Fallback estimate
@@ -510,7 +490,7 @@ class ContextAnalyzer {
 
     try {
       const agentsDir = path.join(this.claudeDir, 'agents');
-      
+
       // Check if directory exists
       try {
         await fs.access(agentsDir);
@@ -519,73 +499,71 @@ class ContextAnalyzer {
         this.results.breakdown.agents = {};
         return;
       }
-      
+
       const agentFiles = await fs.readdir(agentsDir);
-      
+
       let totalTokens = 0;
       const agentBreakdown = {};
-      
+
       // Process files in batches to prevent timeout
       const batchSize = 5;
       for (let i = 0; i < agentFiles.length; i += batchSize) {
         const batch = agentFiles.slice(i, i + batchSize);
-        
-        await Promise.all(batch.map(async (file) => {
-          if (file.endsWith('.md')) {
-            const filePath = path.join(agentsDir, file);
-            
-            try {
-              // Use file cache to prevent re-reading
-              if (isFileCacheValid(filePath)) {
-                const cachedData = cache.fileCache.get(filePath);
-                totalTokens += cachedData.tokens;
-                agentBreakdown[file] = cachedData.tokens;
-                return;
+
+        await Promise.all(
+          batch.map(async file => {
+            if (file.endsWith('.md')) {
+              const filePath = path.join(agentsDir, file);
+
+              try {
+                // Use file cache to prevent re-reading
+                if (isFileCacheValid(filePath)) {
+                  const cachedData = cache.fileCache.get(filePath);
+                  totalTokens += cachedData.tokens;
+                  agentBreakdown[file] = cachedData.tokens;
+                  return;
+                }
+
+                // Read file with timeout protection
+                const content = await Promise.race([
+                  fs.readFile(filePath, 'utf8'),
+                  new Promise((_, reject) => setTimeout(() => reject(new Error('File read timeout')), 5000)),
+                ]);
+
+                const tokens = estimateTokens(content);
+                totalTokens += tokens;
+                agentBreakdown[file] = tokens;
+
+                // Cache the file result
+                cache.fileCache.set(filePath, {
+                  tokens,
+                  timestamp: Date.now(),
+                });
+              } catch (error) {
+                console.warn(`Warning: Could not read agent file ${file}: ${error.message}`);
+                // Use fallback estimate for unreadable files
+                const fallbackTokens = 1000;
+                totalTokens += fallbackTokens;
+                agentBreakdown[file] = fallbackTokens;
               }
-              
-              // Read file with timeout protection
-              const content = await Promise.race([
-                fs.readFile(filePath, 'utf8'),
-                new Promise((_, reject) => 
-                  setTimeout(() => reject(new Error('File read timeout')), 5000)
-                )
-              ]);
-              
-              const tokens = estimateTokens(content);
-              totalTokens += tokens;
-              agentBreakdown[file] = tokens;
-              
-              // Cache the file result
-              cache.fileCache.set(filePath, { 
-                tokens, 
-                timestamp: Date.now() 
-              });
-              
-            } catch (error) {
-              console.warn(`Warning: Could not read agent file ${file}: ${error.message}`);
-              // Use fallback estimate for unreadable files
-              const fallbackTokens = 1000;
-              totalTokens += fallbackTokens;
-              agentBreakdown[file] = fallbackTokens;
             }
-          }
-        }));
-        
+          })
+        );
+
         // Small delay between batches to prevent overwhelming the system
         if (i + batchSize < agentFiles.length) {
           await new Promise(resolve => setTimeout(resolve, 10));
         }
       }
-      
+
       this.results.customAgents = totalTokens;
       this.results.breakdown.agents = agentBreakdown;
-      
+
       // Cache the results
       cache.customAgents = {
         total: totalTokens,
-        breakdown: agentBreakdown
+        breakdown: agentBreakdown,
       };
-      
     } catch (error) {
       console.error('Error analyzing agents:', error.message);
       this.results.customAgents = 8900; // Fallback estimate
@@ -601,7 +579,7 @@ class ContextAnalyzer {
 
     try {
       const claudeMdPath = path.join(this.claudeDir, 'CLAUDE.md');
-      
+
       // Use file cache to prevent re-reading
       if (isFileCacheValid(claudeMdPath)) {
         const cachedData = cache.fileCache.get(claudeMdPath);
@@ -609,25 +587,22 @@ class ContextAnalyzer {
         cache.memoryFiles = cachedData.tokens;
         return;
       }
-      
+
       // Read file with timeout protection
       const content = await Promise.race([
         fs.readFile(claudeMdPath, 'utf8'),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Memory file read timeout')), 3000)
-        )
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Memory file read timeout')), 3000)),
       ]);
-      
+
       const tokens = estimateTokens(content);
       this.results.memoryFiles = tokens;
-      
+
       // Cache the result in both caches
       cache.memoryFiles = tokens;
-      cache.fileCache.set(claudeMdPath, { 
-        tokens, 
-        timestamp: Date.now() 
+      cache.fileCache.set(claudeMdPath, {
+        tokens,
+        timestamp: Date.now(),
       });
-      
     } catch (error) {
       console.warn(`Warning: Could not read CLAUDE.md: ${error.message}`);
       this.results.memoryFiles = 2700; // Fallback estimate
@@ -644,7 +619,7 @@ class ContextAnalyzer {
         impact: 'high',
         title: 'Consolidate MCP Servers',
         description: 'Consider disabling unused MCP servers or merging similar functionality',
-        savings: '20-40k tokens'
+        savings: '20-40k tokens',
       });
     }
 
@@ -653,7 +628,7 @@ class ContextAnalyzer {
         impact: 'high',
         title: 'Optimize Agent Architecture',
         description: 'Combine overlapping agent responsibilities to reduce redundancy',
-        savings: '3-6k tokens'
+        savings: '3-6k tokens',
       });
     }
 
@@ -663,7 +638,7 @@ class ContextAnalyzer {
         impact: 'medium',
         title: 'Selective MCP Loading',
         description: 'Implement on-demand loading for MCP servers',
-        savings: '5-15k tokens'
+        savings: '5-15k tokens',
       });
     }
 
@@ -673,7 +648,7 @@ class ContextAnalyzer {
   async analyze() {
     const startTime = Date.now();
     await this.initialize();
-    
+
     // Performance monitoring
     const performanceLog = {
       systemPrompt: 0,
@@ -681,9 +656,9 @@ class ContextAnalyzer {
       mcpTools: 0,
       customAgents: 0,
       memoryFiles: 0,
-      optimization: 0
+      optimization: 0,
     };
-    
+
     try {
       // Execute with individual timing and timeout protection
       const analysisPromises = [
@@ -691,19 +666,16 @@ class ContextAnalyzer {
         this.timedExecution('systemTools', () => this.analyzeSystemTools()),
         this.timedExecution('mcpTools', () => this.analyzeMcpTools()),
         this.timedExecution('customAgents', () => this.analyzeCustomAgents()),
-        this.timedExecution('memoryFiles', () => this.analyzeMemoryFiles())
+        this.timedExecution('memoryFiles', () => this.analyzeMemoryFiles()),
       ];
-      
+
       // Execute all analyses with shorter timeout for faster response
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Analysis timeout - using cached/fallback values')), 3000)
       );
-      
-      const analysisResults = await Promise.race([
-        Promise.allSettled(analysisPromises),
-        timeoutPromise
-      ]);
-      
+
+      const analysisResults = await Promise.race([Promise.allSettled(analysisPromises), timeoutPromise]);
+
       // Process results from settled promises
       if (Array.isArray(analysisResults)) {
         analysisResults.forEach((result, index) => {
@@ -713,17 +685,16 @@ class ContextAnalyzer {
           }
         });
       }
-      
+
       // Generate optimization recommendations with timing
       const optimizationStart = Date.now();
       await this.generateOptimizationRecommendations();
       performanceLog.optimization = Date.now() - optimizationStart;
-      
     } catch (error) {
       console.warn(`Analysis warning: ${error.message} - Using available results`);
     }
 
-    this.results.total = 
+    this.results.total =
       this.results.systemPrompt +
       this.results.systemTools +
       this.results.mcpTools +
@@ -731,18 +702,20 @@ class ContextAnalyzer {
       this.results.memoryFiles;
 
     const duration = Date.now() - startTime;
-    
+
     // Enhanced performance reporting
     if (duration > 1000) {
       console.log(`⚡ Analysis completed in ${duration}ms`);
       if (duration > 5000) {
-        console.log(`📊 Performance breakdown: MCP:${performanceLog.mcpTools}ms, Agents:${performanceLog.customAgents}ms, Memory:${performanceLog.memoryFiles}ms`);
+        console.log(
+          `📊 Performance breakdown: MCP:${performanceLog.mcpTools}ms, Agents:${performanceLog.customAgents}ms, Memory:${performanceLog.memoryFiles}ms`
+        );
       }
     }
 
     return this.results;
   }
-  
+
   // Helper method for timed execution
   async timedExecution(name, fn) {
     const start = Date.now();
@@ -756,10 +729,11 @@ class ContextAnalyzer {
   }
 
   formatResults(mode = 'standard') {
-    const { systemPrompt, systemTools, mcpTools, customAgents, memoryFiles, total, projectPath, breakdown } = this.results;
-    
-    const getPercentage = (value) => ((value / total) * 100).toFixed(1);
-    const formatTokens = (tokens) => {
+    const { systemPrompt, systemTools, mcpTools, customAgents, memoryFiles, total, projectPath, breakdown } =
+      this.results;
+
+    const getPercentage = value => ((value / total) * 100).toFixed(1);
+    const formatTokens = tokens => {
       if (tokens >= 1000) {
         return `${(tokens / 1000).toFixed(1)}k`;
       }
@@ -771,7 +745,7 @@ class ContextAnalyzer {
     const freePercentage = ((freeSpace / maxTokens) * 100).toFixed(1);
 
     let output = '';
-    
+
     if (mode === 'summary') {
       output += `Claude Code Context: ${formatTokens(total)} total tokens\n`;
       output += `Project: ${path.basename(projectPath)}\n`;
@@ -784,13 +758,13 @@ class ContextAnalyzer {
     const fullBar = '⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁';
     const mixedBar = '⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛀ ⛶ ⛶';
     const emptyBar = '⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶';
-    
+
     // Header with exact expected format
     output += `  ⎿  ${mainBar} \n`;
     output += `     ${fullBar}   Context Usage\n`;
     output += `     ${fullBar}   claude-sonnet-4 • ${formatTokens(total)}/${formatTokens(maxTokens)} tokens (${usagePercentage}%)\n`;
     output += `     ${fullBar} \n`;
-    
+
     // Component breakdown with exact formatting
     output += `     ${fullBar}   ⛁ System prompt: ${formatTokens(systemPrompt)} tokens (${getPercentage(systemPrompt)}%)\n`;
     output += `     ${fullBar}   ⛁ System tools: ${formatTokens(systemTools)} tokens (${getPercentage(systemTools)}%)\n`;
@@ -798,11 +772,11 @@ class ContextAnalyzer {
     output += `     ${fullBar}   ⛁ Custom agents: ${formatTokens(customAgents)} tokens (${getPercentage(customAgents)}%)\n`;
     output += `     ${mixedBar}   ⛁ Memory files: ${formatTokens(memoryFiles)} tokens (${getPercentage(memoryFiles)}%)\n`;
     output += `     ${emptyBar}   ⛶ Free space: ${formatTokens(freeSpace)} (${freePercentage}%)\n\n`;
-    
+
     // Add detailed MCP tool breakdown
     if (breakdown?.mcpToolsDetailed) {
       output += `     MCP tools · /mcp\n`;
-      
+
       // Iterate through each server and its tools
       for (const [serverName, tools] of Object.entries(breakdown.mcpToolsDetailed)) {
         for (const tool of tools) {
@@ -813,15 +787,14 @@ class ContextAnalyzer {
       }
       output += `\n`;
     }
-    
+
     // Add custom agents breakdown
     if (breakdown?.agents && Object.keys(breakdown.agents).length > 0) {
       output += `     Custom agents · /agents\n`;
-      
+
       // Sort agents by token count (descending)
-      const sortedAgents = Object.entries(breakdown.agents)
-        .sort(([,a], [,b]) => b - a);
-      
+      const sortedAgents = Object.entries(breakdown.agents).sort(([, a], [, b]) => b - a);
+
       for (const [agentFile, tokens] of sortedAgents) {
         const agentName = agentFile.replace('.md', '');
         const agentTokens = formatTokens(tokens);
@@ -830,18 +803,18 @@ class ContextAnalyzer {
       }
       output += `\n`;
     }
-    
+
     // Add memory files breakdown
     output += `     Memory files · /memory\n`;
     output += `     └ Project (${this.claudeDir}/CLAUDE.md): ${formatTokens(memoryFiles)} tokens\n\n`;
-    
+
     // Add optimization recommendations if available
     if (this.results.optimization && this.results.optimization.length > 0) {
       output += `Optimization Recommendations:\n\n`;
-      
+
       const highImpact = this.results.optimization.filter(r => r.impact === 'high');
       const mediumImpact = this.results.optimization.filter(r => r.impact === 'medium');
-      
+
       if (highImpact.length > 0) {
         output += `High Impact (>10% token reduction):\n`;
         highImpact.forEach(rec => {
@@ -849,7 +822,7 @@ class ContextAnalyzer {
         });
         output += `\n`;
       }
-      
+
       if (mediumImpact.length > 0) {
         output += `Medium Impact (3-10% token reduction):\n`;
         mediumImpact.forEach(rec => {
@@ -857,12 +830,12 @@ class ContextAnalyzer {
         });
       }
     }
-    
+
     return output;
   }
 
   // Helper method to generate visual progress bar with exact format
-  generateVisualProgressBar(percentage, width = 10, mixedBar = false) {
+  generateVisualProgressBar(percentage, _width = 10, mixedBar = false) {
     // Return hardcoded format for consistency with expected output
     if (mixedBar) {
       return '⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛀ ⛶ ⛶';
@@ -875,22 +848,25 @@ class ContextAnalyzer {
 const isMainModule = import.meta.url === `file://${process.argv[1]}`;
 if (isMainModule) {
   const mode = process.argv[2] || 'standard';
-  
+
   try {
     const analyzer = new ContextAnalyzer();
-    
-    analyzer.analyze().then(results => {
-      const output = analyzer.formatResults(mode);
-      // Force output to display immediately by using process.stdout directly
-      process.stdout.write(output + '\n');
-      // Force flush stdout to ensure immediate display
-      if (process.stdout.isTTY === false) {
-        process.stdout.write('');
-      }
-    }).catch(error => {
-      console.error('Error:', error.message);
-      process.exit(1);
-    });
+
+    analyzer
+      .analyze()
+      .then(_results => {
+        const output = analyzer.formatResults(mode);
+        // Force output to display immediately by using process.stdout directly
+        process.stdout.write(output + '\n');
+        // Force flush stdout to ensure immediate display
+        if (process.stdout.isTTY === false) {
+          process.stdout.write('');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error.message);
+        process.exit(1);
+      });
   } catch (error) {
     console.error('Error:', error.message);
     process.exit(1);

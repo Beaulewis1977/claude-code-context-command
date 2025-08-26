@@ -6,10 +6,32 @@
   "scripts": {
     "context": "node context-cmd.js",
     "analyze": "node context-analyzer.js",
-    "test": "mocha ../tests/security.test.js",
-    "security-test": "node ../tests/security.test.js"
+    "test": "node ../tests/security-test-runner.js",
+    "test-mocha": "mocha ../tests/security.test.js --require ../tests/test-setup.js",
+    "security-test": "node ../tests/security.test.js",
+    "lint": "eslint . --ext .js",
+    "lint:fix": "eslint . --ext .js --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky install",
+    "pre-commit": "lint-staged"
   },
   "devDependencies": {
-    "mocha": "^10.0.0"
+    "mocha": "^10.0.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "@eslint/js": "^8.57.0",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.2"
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "prettier --write",
+      "npm run test"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
   }
 }

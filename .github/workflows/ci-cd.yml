@@ -31,15 +31,15 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
-          cache-dependency-path: 'claude-code-context-command/scripts/package.json'
+          cache-dependency-path: 'scripts/package.json'
 
       - name: Install dependencies
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: npm ci
 
       - name: Run security test suite
         id: security-check
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: |
           echo "Running comprehensive security test suite..."
           npm test 2>&1 | tee security-results.txt
@@ -59,7 +59,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: security-test-results-${{ github.run_id }}
-          path: claude-code-context-command/scripts/security-results.txt
+          path: scripts/security-results.txt
           retention-days: 30
 
   # Vulnerability scanning
@@ -79,14 +79,14 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
-          cache-dependency-path: 'claude-code-context-command/scripts/package.json'
+          cache-dependency-path: 'scripts/package.json'
 
       - name: Install dependencies
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: npm ci
 
       - name: Run npm audit
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: |
           echo "🔍 Running npm audit..."
           npm audit --audit-level=moderate || {
@@ -96,7 +96,7 @@ jobs:
           }
 
       - name: Run dependency check
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: |
           echo "📦 Checking for outdated dependencies..."
           npm outdated || true
@@ -131,14 +131,14 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-          cache-dependency-path: 'claude-code-context-command/scripts/package.json'
+          cache-dependency-path: 'scripts/package.json'
 
       - name: Install dependencies
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: npm ci
 
       - name: Run functional tests
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: |
           echo "🧪 Running functional tests on ${{ matrix.os }} with Node ${{ matrix.node-version }}"
           node context-analyzer.js summary || {
@@ -154,18 +154,22 @@ jobs:
           echo "✅ Functional tests passed"
 
       - name: Test security module
-        working-directory: ./claude-code-context-command
+        working-directory: ./
         run: |
           echo "🔐 Testing security module..."
           node -e "
-            const { InputValidator } = require('./lib/security.js');
-            try {
-              InputValidator.validateMode('compact');
-              console.log('✅ Security module working correctly');
-            } catch (error) {
-              console.error('❌ Security module test failed:', error);
+            import('./lib/security.js').then(({ InputValidator }) => {
+              try {
+                InputValidator.validateMode('compact');
+                console.log('✅ Security module working correctly');
+              } catch (error) {
+                console.error('❌ Security module test failed:', error);
+                process.exit(1);
+              }
+            }).catch(error => {
+              console.error('❌ Failed to import security module:', error);
               process.exit(1);
-            }
+            });
           "
 
   # Installation script testing
@@ -198,14 +202,14 @@ jobs:
         if: matrix.shell == 'bash'
         run: |
           echo "🔧 Testing ${{ matrix.installer }} on ${{ matrix.os }}"
-          chmod +x ./claude-code-context-command/installers/${{ matrix.installer }}
+          chmod +x ./installers/${{ matrix.installer }}
           
           # Create a temporary home directory for testing
           export TEST_HOME=$(mktemp -d)
           export HOME=$TEST_HOME
           
           # Run installer
-          cd claude-code-context-command/installers
+          cd installers
           ./${{ matrix.installer }} || {
             echo "❌ Installer failed"
             exit 1
@@ -232,7 +236,7 @@ jobs:
           $env:USERPROFILE = $TestHome.FullName
           
           # Run installer
-          Set-Location claude-code-context-command/installers
+          Set-Location installers
           powershell -ExecutionPolicy Bypass -File ${{ matrix.installer }}
           if ($LASTEXITCODE -ne 0) {
             Write-Error "❌ Installer failed"
@@ -266,16 +270,38 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
-          cache-dependency-path: 'claude-code-context-command/scripts/package.json'
+          cache-dependency-path: 'scripts/package.json'
 
       - name: Install dependencies
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: npm ci
+
+      - name: Run ESLint
+        working-directory: ./scripts
+        run: |
+          echo "🔍 Running ESLint for code quality..."
+          npm run lint || {
+            echo "❌ ESLint found issues"
+            echo "🔧 To fix automatically, run: npm run lint:fix"
+            exit 1
+          }
+          echo "✅ ESLint checks passed"
+
+      - name: Check code formatting
+        working-directory: ./scripts
+        run: |
+          echo "🎨 Checking code formatting with Prettier..."
+          npm run format:check || {
+            echo "❌ Code formatting issues found"
+            echo "🔧 To fix automatically, run: npm run format"
+            exit 1
+          }
+          echo "✅ Code formatting is consistent"
 
       - name: Check JavaScript syntax
         run: |
           echo "🔍 Checking JavaScript syntax..."
-          find claude-code-context-command -name "*.js" -type f | while read file; do
+          find . -name "*.js" -type f -not -path "./scripts/node_modules/*" | while read file; do
             echo "Checking: $file"
             node -c "$file" || {
               echo "❌ Syntax error in $file"
@@ -290,11 +316,11 @@ jobs:
           
           # Check required files exist
           required_files=(
-            "claude-code-context-command/README.md"
-            "claude-code-context-command/scripts/context-cmd.js"
-            "claude-code-context-command/scripts/context-analyzer.js"
-            "claude-code-context-command/lib/security.js"
-            "claude-code-context-command/tests/security.test.js"
+            "README.md"
+            "scripts/context-cmd.js"
+            "scripts/context-analyzer.js"
+            "lib/security.js"
+            "tests/security.test.js"
           )
           
           for file in "${required_files[@]}"; do
@@ -311,12 +337,12 @@ jobs:
           echo "🔒 Checking file permissions..."
           
           # Check that JavaScript files are not executable (security best practice)
-          find claude-code-context-command -name "*.js" -type f -executable | while read file; do
+          find . -name "*.js" -type f -executable -not -path "./scripts/node_modules/*" | while read file; do
             echo "⚠️  JavaScript file should not be executable: $file"
           done
           
           # Check installer permissions
-          if [ ! -x "claude-code-context-command/installers/install.sh" ]; then
+          if [ ! -x "installers/install.sh" ]; then
             echo "❌ install.sh should be executable"
             exit 1
           fi
@@ -339,14 +365,14 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
-          cache-dependency-path: 'claude-code-context-command/scripts/package.json'
+          cache-dependency-path: 'scripts/package.json'
 
       - name: Install dependencies
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: npm ci
 
       - name: Run end-to-end test
-        working-directory: ./claude-code-context-command
+        working-directory: ./
         run: |
           echo "🚀 Running end-to-end integration test..."
           

@@ -114,14 +114,14 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
-          cache-dependency-path: 'claude-code-context-command/scripts/package.json'
+          cache-dependency-path: 'scripts/package.json'
 
       - name: Install dependencies
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: npm ci
 
       - name: Run comprehensive test suite
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: |
           echo "🧪 Running comprehensive test suite for release..."
           
@@ -140,7 +140,7 @@ jobs:
           echo "🔧 Validating installation scripts for release..."
           
           # Test syntax of shell scripts
-          for script in claude-code-context-command/installers/*.sh; do
+          for script in installers/*.sh; do
             if [ -f "$script" ]; then
               bash -n "$script" || {
                 echo "❌ Syntax error in $script"
@@ -151,9 +151,9 @@ jobs:
           done
           
           # Test PowerShell script syntax (basic check)
-          if [ -f "claude-code-context-command/installers/install.ps1" ]; then
+          if [ -f "installers/install.ps1" ]; then
             # Basic validation - check for common syntax issues
-            if grep -E '^\s*\$.*=.*\|' claude-code-context-command/installers/install.ps1; then
+            if grep -E '^\s*\$.*=.*\|' installers/install.ps1; then
               echo "⚠️  Potential PowerShell syntax issue detected"
             fi
             echo "✅ PowerShell script basic validation completed"
@@ -175,10 +175,10 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
-          cache-dependency-path: 'claude-code-context-command/scripts/package.json'
+          cache-dependency-path: 'scripts/package.json'
 
       - name: Install dependencies
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: npm ci --only=production
 
       - name: Create release package
@@ -197,11 +197,11 @@ jobs:
             --exclude='node_modules' \
             --exclude='release-assets' \
             --exclude='*.log' \
-            claude-code-context-command/
+./
           
           # Create Windows package
           zip -r "release-assets/${PACKAGE_NAME}-windows.zip" \
-            claude-code-context-command/ \
+./ \
             -x "*.git*" "*/node_modules/*" "release-assets/*" "*.log"
           
           # Create checksums
@@ -358,7 +358,7 @@ jobs:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
-          cache-dependency-path: 'claude-code-context-command/npm/package.json'
+          cache-dependency-path: 'npm/package.json'
 
       - name: Prepare NPM package
         run: |
@@ -368,8 +368,8 @@ jobs:
           echo "📦 Preparing NPM package version $CLEAN_VERSION"
           
           # Check if NPM package configuration exists
-          if [ -f "claude-code-context-command/npm/package.json" ]; then
-            cd claude-code-context-command/npm
+          if [ -f "npm/package.json" ]; then
+            cd npm
             
             # Update version in package.json
             npm version "$CLEAN_VERSION" --no-git-tag-version
@@ -383,7 +383,7 @@ jobs:
 
       - name: Publish to NPM
         if: success()
-        working-directory: ./claude-code-context-command/npm
+        working-directory: ./npm
         run: |
           echo "🚀 Publishing to NPM..."
           

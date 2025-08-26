@@ -52,15 +52,15 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
-          cache-dependency-path: 'claude-code-context-command/scripts/package.json'
+          cache-dependency-path: 'scripts/package.json'
 
       - name: Install dependencies
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: npm ci
 
       - name: Scan for updates
         id: scan
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: |
           echo "🔍 Scanning for dependency updates..."
           
@@ -112,8 +112,8 @@ jobs:
         with:
           name: dependency-scan-results-${{ github.run_id }}
           path: |
-            claude-code-context-command/audit-results.json
-            claude-code-context-command/outdated.json
+            audit-results.json
+            outdated.json
           retention-days: 30
 
   # Apply security updates
@@ -135,7 +135,7 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
-          cache-dependency-path: 'claude-code-context-command/scripts/package.json'
+          cache-dependency-path: 'scripts/package.json'
 
       - name: Configure Git
         run: |
@@ -143,7 +143,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Apply security fixes
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: |
           echo "🔒 Applying security updates..."
           
@@ -164,7 +164,7 @@ jobs:
           fi
 
       - name: Test after security updates
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: |
           echo "🧪 Testing after security updates..."
           
@@ -184,7 +184,7 @@ jobs:
           git checkout -b "$BRANCH_NAME"
           
           # Commit changes
-          git add claude-code-context-command/scripts/package-lock.json
+          git add scripts/package-lock.json
           git commit -m "🔒 Apply security updates
 
           - Applied npm audit fix for security vulnerabilities
@@ -240,7 +240,7 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
-          cache-dependency-path: 'claude-code-context-command/scripts/package.json'
+          cache-dependency-path: 'scripts/package.json'
 
       - name: Configure Git
         run: |
@@ -248,7 +248,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Apply minor updates
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: |
           echo "📦 Applying minor/patch updates..."
           
@@ -272,7 +272,7 @@ jobs:
           fi
 
       - name: Test after minor updates
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: |
           echo "🧪 Testing after minor updates..."
           
@@ -295,7 +295,7 @@ jobs:
       - name: Create minor update PR
         run: |
           # Check if there are any changes
-          if git diff --exit-code claude-code-context-command/scripts/package*.json; then
+          if git diff --exit-code scripts/package*.json; then
             echo "No minor updates were applied"
             exit 0
           fi
@@ -305,7 +305,7 @@ jobs:
           git checkout -b "$BRANCH_NAME"
           
           # Commit changes
-          git add claude-code-context-command/scripts/package*.json
+          git add scripts/package*.json
           git commit -m "📦 Update dependencies (minor/patch)
 
           - Updated development and selected production dependencies
@@ -356,14 +356,14 @@ jobs:
         with:
           node-version: '20.x'
           cache: 'npm'
-          cache-dependency-path: 'claude-code-context-command/scripts/package.json'
+          cache-dependency-path: 'scripts/package.json'
 
       - name: Install dependencies
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: npm ci
 
       - name: Analyze dependency health
-        working-directory: ./claude-code-context-command/scripts
+        working-directory: ./scripts
         run: |
           echo "🏥 Analyzing dependency health..."
           

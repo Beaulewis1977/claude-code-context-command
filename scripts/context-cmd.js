@@ -7,11 +7,8 @@
  */
 
 import path from 'path';
-import { fileURLToPath } from 'url';
 import os from 'os';
 import { SafeCommandExecutor, InputValidator, SecureErrorHandler } from '../lib/security.js';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 /**
  * Find the nearest .claude directory by walking up the directory tree
@@ -19,60 +16,60 @@ const __dirname = path.dirname(__filename);
  */
 async function findClaudeDirectory(startPath = process.cwd()) {
   const { promises: fs } = await import('fs');
-  
+
   // Validate and sanitize start path
   let currentPath;
   try {
     const validatedStartPath = InputValidator.validatePath(startPath);
     currentPath = path.resolve(validatedStartPath);
   } catch (error) {
-    SecureErrorHandler.logSecurityEvent('invalid_start_path', { 
+    SecureErrorHandler.logSecurityEvent('invalid_start_path', {
       startPath: 'REDACTED',
-      error: error.message 
+      error: error.message,
     });
     // Fall back to current working directory if start path is invalid
     currentPath = path.resolve(process.cwd());
   }
-  
+
   const root = path.parse(currentPath).root;
   let iterations = 0;
   const maxIterations = 50; // Prevent infinite loops
 
   while (currentPath !== root && iterations < maxIterations) {
     const claudePath = path.join(currentPath, '.claude');
-    
+
     // Additional security: ensure claudePath is within expected bounds
     if (!claudePath.startsWith(currentPath)) {
       SecureErrorHandler.logSecurityEvent('path_traversal_attempt', {
         currentPath: 'REDACTED',
-        claudePath: 'REDACTED'
+        claudePath: 'REDACTED',
       });
       break;
     }
-    
+
     try {
       const stat = await fs.stat(claudePath);
       if (stat.isDirectory()) {
         return {
           claudeDir: claudePath,
-          projectRoot: currentPath
+          projectRoot: currentPath,
         };
       }
     } catch (error) {
       // Directory doesn't exist, continue searching
       // Don't log this as it's expected behavior
     }
-    
+
     currentPath = path.dirname(currentPath);
     iterations++;
   }
-  
+
   if (iterations >= maxIterations) {
     SecureErrorHandler.logSecurityEvent('max_iterations_exceeded', {
-      iterations: maxIterations
+      iterations: maxIterations,
     });
   }
-  
+
   return null;
 }
 
@@ -87,11 +84,11 @@ class ContextCommand {
 
   async execute(mode = 'compact') {
     const startTime = Date.now();
-    
+
     try {
       // Validate mode parameter to prevent injection
       const validatedMode = InputValidator.validateMode(mode);
-      
+
       // Find the current project's .claude directory
       const projectInfo = await findClaudeDirectory();
       if (!projectInfo) {
@@ -113,15 +110,12 @@ class ContextCommand {
       // Choose the right analyzer based on mode
       const analyzerName = validatedMode === 'detailed' ? 'context-analyzer.js' : 'context-analyzer-simple.js';
       const globalAnalyzerPath = path.join(os.homedir(), '.claude', 'scripts', analyzerName);
-      
+
       // Use secure command execution instead of execAsync
-      const { stdout, stderr } = await this.executor.execute(
-        'timeout-analyze',
-        globalAnalyzerPath,
-        [validatedMode],
-        { cwd: currentProject }
-      );
-      
+      const { stdout, stderr } = await this.executor.execute('timeout-analyze', globalAnalyzerPath, [validatedMode], {
+        cwd: currentProject,
+      });
+
       if (stderr && !stderr.includes('timeout')) {
         console.warn('⚠️  Analysis warnings:', stderr);
       }
@@ -138,18 +132,17 @@ class ContextCommand {
       // Ensure output is properly flushed when returning
       process.stdout.write(stdout);
       return stdout;
-
     } catch (error) {
       // Use secure error handling
       const secureError = SecureErrorHandler.sanitizeError(error);
       console.error(`❌ Context analysis failed: ${secureError.error}`);
-      
+
       // Log security event
       SecureErrorHandler.logSecurityEvent('context_analysis_failed', {
         errorId: secureError.id,
-        mode: mode // Log original mode for debugging
+        mode: mode, // Log original mode for debugging
       });
-      
+
       // Fallback to basic info if analysis fails
       return await this.getFallbackAnalysis();
     }
@@ -165,9 +158,8 @@ class ContextCommand {
   }
 
   async getFallbackAnalysis() {
-    const projectInfo = await findClaudeDirectory();
-    const projectName = projectInfo ? path.basename(projectInfo.projectRoot) : 'Unknown';
-    
+    await findClaudeDirectory();
+
     return `  ⎿  ⛁ ⛁ ⛁ ⛁ ⛀ ⛁ ⛁ ⛁ ⛁ ⛁ 
      ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁   Context Usage
      ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁ ⛁   claude-sonnet-4 • 177k/200k tokens (89%)
@@ -188,7 +180,7 @@ if (isMainModule) {
   (async () => {
     const mode = process.argv[2] || 'compact';
     const cmd = new ContextCommand();
-    
+
     try {
       const result = await cmd.execute(mode);
       // Output is already written in cmd.execute(), no need to log again

@@ -7,13 +7,13 @@ queries:
 
 # Path filters - focus on security-critical areas
 paths:
-  - claude-code-context-command/lib/
-  - claude-code-context-command/scripts/
-  - claude-code-context-command/installers/
+  - lib/
+  - scripts/
+  - installers/
 
 # Ignore test files from certain checks to reduce noise
 paths-ignore:
-  - claude-code-context-command/tests/
+  - tests/
   - "**/node_modules/**"
   - "**/*.md"
 
