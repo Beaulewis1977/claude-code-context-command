@@ -146,9 +146,13 @@ jobs:
           mkdir -p .claude/memory-bank
           mkdir -p .claude/scripts
           
-          # Create basic CLAUDE.md file
-          cat > .claude/CLAUDE.md << 'EOF'
-          # Claude Code Context Command Project
+          echo "✅ .claude directory structure created successfully"
+          
+          # Use Node.js to create files (cross-platform compatible)
+          node -e "
+          const fs = require('fs');
+          
+          const claudemd = \`# Claude Code Context Command Project
           
           This is a test project for CI/CD pipeline validation.
           
@@ -159,22 +163,22 @@ jobs:
           ## Context
           
           The context analyzer should be able to process this minimal project structure for testing purposes.
-          EOF
+          \`;
           
-          # Create basic settings.local.json file
-          cat > .claude/settings.local.json << 'EOF'
-          {
-            "project_name": "claude-code-context-command-test",
-            "ai_model": "claude-3-5-sonnet-20241022",
-            "context_mode": "summary",
-            "max_tokens": 200000,
-            "test_environment": true,
-            "enabledMcpjsonServers": []
-          }
-          EOF
+          const settings = {
+            'project_name': 'claude-code-context-command-test',
+            'ai_model': 'claude-3-5-sonnet-20241022',
+            'context_mode': 'summary',
+            'max_tokens': 200000,
+            'test_environment': true,
+            'enabledMcpjsonServers': []
+          };
           
-          echo "✅ .claude directory structure created successfully"
-          ls -la .claude/
+          fs.writeFileSync('.claude/CLAUDE.md', claudemd);
+          fs.writeFileSync('.claude/settings.local.json', JSON.stringify(settings, null, 2));
+          
+          console.log('✅ Claude configuration files created');
+          "
 
       - name: Run functional tests
         working-directory: ./scripts
