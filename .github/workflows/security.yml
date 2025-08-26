@@ -209,7 +209,7 @@ jobs:
           fi
           
           # Check for any references to unsafe functions (excluding MCP tool names)
-          if grep -r '\beval\b\|new Function\|setTimeout.*string\|setInterval.*string' ../lib/ ../scripts/ --exclude="*.md" 2>/dev/null | grep -v "mcp__"; then
+          if grep -r '\beval\b\|new Function\|setTimeout.*string\|setInterval.*string' ../lib/ ../scripts/ --exclude="*.md" --exclude-dir="node_modules" 2>/dev/null | grep -v "mcp__"; then
             echo "❌ Potentially unsafe function usage found"
             exit 1
           else
