@@ -319,21 +319,24 @@ jobs:
           
           echo "🚀 Creating GitHub release: $VERSION"
           
-          # Prepare release command
-          RELEASE_CMD="gh release create \"$VERSION\" release-assets/* \
-            --title \"Claude Code Context Command $VERSION\" \
-            --notes '${{ needs.generate-changelog.outputs.changelog }}'"
+          # Create changelog file to avoid shell parsing issues
+          cat > changelog.md << 'CHANGELOG_EOF'
+          ${{ needs.generate-changelog.outputs.changelog }}
+          CHANGELOG_EOF
+          
+          # Prepare release command arguments
+          RELEASE_ARGS=("$VERSION" release-assets/* --title "Claude Code Context Command $VERSION" --notes-file changelog.md)
           
           # Add prerelease flag if needed
           if [ "$IS_PRERELEASE" = "true" ]; then
-            RELEASE_CMD="$RELEASE_CMD --prerelease"
+            RELEASE_ARGS+=(--prerelease)
             echo "🔖 Creating pre-release"
           else
             echo "📢 Creating stable release"
           fi
           
           # Create the release
-          eval $RELEASE_CMD
+          gh release create "${RELEASE_ARGS[@]}"
           
           echo "✅ GitHub release created successfully"
           echo "🔗 Release URL: https://github.com/${{ github.repository }}/releases/tag/$VERSION"
