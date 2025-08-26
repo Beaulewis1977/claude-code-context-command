@@ -82,8 +82,8 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           
-          # Check if tag already exists
-          if git tag -l | grep -q "^$VERSION$"; then
+          # Check if tag already exists (skip if triggered by tag push)
+          if [ "${{ github.event_name }}" != "push" ] && git tag -l | grep -q "^$VERSION$"; then
             echo "❌ Tag $VERSION already exists"
             exit 1
           fi
@@ -197,11 +197,11 @@ jobs:
             --exclude='node_modules' \
             --exclude='release-assets' \
             --exclude='*.log' \
-./
+            ./
           
           # Create Windows package
           zip -r "release-assets/${PACKAGE_NAME}-windows.zip" \
-./ \
+            ./ \
             -x "*.git*" "*/node_modules/*" "release-assets/*" "*.log"
           
           # Create checksums
