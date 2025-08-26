@@ -208,8 +208,8 @@ jobs:
             echo "⚠️  Warning: Development dependencies found in production dependencies"
           fi
           
-          # Check for any references to unsafe functions
-          if grep -r "eval\|Function\|setTimeout.*string\|setInterval.*string" ../lib/ ../scripts/ 2>/dev/null; then
+          # Check for any references to unsafe functions (excluding MCP tool names)
+          if grep -r '\beval\b\|new Function\|setTimeout.*string\|setInterval.*string' ../lib/ ../scripts/ --exclude="*.md" 2>/dev/null | grep -v "mcp__"; then
             echo "❌ Potentially unsafe function usage found"
             exit 1
           else

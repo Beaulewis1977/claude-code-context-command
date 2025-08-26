@@ -460,7 +460,7 @@ describe('Security Test Suite', () => {
         const content = 'original content';
         await fs.writeFile(testFile, content);
 
-        const wrongHash = 'test-fake-hash-for-security-validation-12345';
+        const wrongHash = 'test-hash-12345';
 
         const isValid = await IntegrityVerifier.verifyChecksum(testFile, wrongHash);
         expect(isValid).to.be.false;
