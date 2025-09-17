@@ -38,7 +38,7 @@ Our comprehensive security improvements have eliminated **all 25+ identified vul
    - Fill out the private security advisory form
 
 2. **Direct Email** (Alternative)
-   - Email: security@claude-code-context-command.dev
+   - Email: blewisxx@gmail.com
    - Include "SECURITY" in the subject line
    - Use PGP encryption if available
 
@@ -157,9 +157,9 @@ We recognize security researchers who help improve our security:
 
 ### Documentation
 
-- [Security Test Suite Documentation](../claude-code-context-command/tests/security.test.js)
-- [Security Module Documentation](../claude-code-context-command/lib/security.js)
-- [Installation Security Guide](../claude-code-context-command/docs/INSTALLATION.md#security)
+- [Security Test Suite](tests/security.test.js) - View the security test code
+- [Security Module](lib/security.js) - View the security implementation
+- [Installation Guide](docs/INSTALLATION.md) - Installation documentation
 
 ### Security Tools
 
@@ -175,9 +175,9 @@ We recognize security researchers who help improve our security:
 
 ## 📞 Contact Information
 
-- **Security Team**: security@claude-code-context-command.dev
-- **General Contact**: hello@claude-code-context-command.dev
+- **Security Contact**: blewisxx@gmail.com
 - **GitHub Security**: Use GitHub Security Advisories
+- **Issues**: [Report via GitHub Issues](https://github.com/Beaulewis1977/claude-code-context-command/issues)
 
 ## 🔄 Policy Updates
 
