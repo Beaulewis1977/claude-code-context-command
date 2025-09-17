@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Claude Code Context Command
+# Universal context usage analyzer for Claude Code
+# Version: 1.0.0
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Run the main context analyzer
+node "$SCRIPT_DIR/scripts/context-cmd.js" "$@"

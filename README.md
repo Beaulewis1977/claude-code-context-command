@@ -1,7 +1,7 @@
 # Claude Code Context Command
 
-[![CI/CD](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/actions/workflows/ci-cd.yml)
-[![Security Analysis](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/actions/workflows/security.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/actions/workflows/security.yml)
+[![CI/CD](https://github.com/Beaulewis1977/claude-code-context-command/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/Beaulewis1977/claude-code-context-command/actions/workflows/ci-cd.yml)
+[![Security Analysis](https://github.com/Beaulewis1977/claude-code-context-command/actions/workflows/security.yml/badge.svg)](https://github.com/Beaulewis1977/claude-code-context-command/actions/workflows/security.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-16%2B-green.svg)](https://nodejs.org/)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20WSL-blue.svg)](#platform-compatibility)
